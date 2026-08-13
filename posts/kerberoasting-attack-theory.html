@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kerberoasting Attack & Theory :: offsec1337</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-base="../">
+  <nav class="topnav">
+    <div class="brand"><span class="accent">offsec</span>1337<span class="caret">_</span></div>
+    <div class="nav-right">
+      <ul class="nav-links">
+        <li><a href="../index.html">home</a></li>
+        <li><a href="../about.html">about</a></li>
+      </ul>
+      <div class="nav-search" id="nav-search">
+        <button class="search-toggle" id="search-toggle" aria-label="Search posts" title="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.4" y2="16.4"/></svg>
+        </button>
+        <div class="search-panel" id="search-panel">
+          <input type="text" id="search-input" placeholder="search posts..." autocomplete="off">
+          <div class="search-results" id="search-results">
+            <div class="search-hint">// start typing to search posts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <a class="back-link" href="../index.html">&larr; back to all posts</a>
+
+    <article class="post-full">
+      <div class="date">Aug 8, 2026</div>
+      <h1>Kerberoasting Attack & Theory</h1>
+
+      <div class="post-body">
+
+        <h3>Theory behind Kerberoasting.</h3>
+        <p>Before learning how to enumerate and attack, first we need to understand how kerberos authentication works.</p>
+        <p>Kerberos protocol helps us to authenticate other services in network without re-entering our password again. To do that is uses tickets.</p>
+
+        <h2>Authentication Process</h2>
+        <p>Name kerberos taken from mythological creature "cerberus" three headed dog who guards gates of hades, lord of the underworld.</p>
+
+        <div class="image-note">
+          // image placeholder &mdash; add your Cerberus/kerberos diagram here.<br>
+          Replace this block with: &lt;img src="../img/posts/your-image.png" alt="..."&gt;
+        </div>
+
+        <p>Just like mythological concept, our kerberos protocol also has three heads.</p>
+        <ol>
+          <li>User</li>
+          <li>Service</li>
+          <li>KDC (Key Distribution Center)</li>
+        </ol>
+        <p>KDC - is domain service who knows all credentials in Active Directory.</p>
+
+        <p>Let's focus this short explanation first before deep diving:</p>
+        <ol>
+          <li>You enter username and password to access domain joined computer</li>
+          <li>KDC checks credentials, if it is true KDC gives you TGT (Ticket Granting Ticket) in other word it is your Passport</li>
+          <li>If you want access to other service you use your TGT not your password anymore</li>
+          <li>KDC then gives you Service Ticket (ST) a.k.a TGS</li>
+          <li>Then you give TGS to service you wanted to access</li>
+          <li>Service then allows you after getting TGS</li>
+        </ol>
+
+        <p>Now let's focus each step one by one.</p>
+
+        <h3>TGT</h3>
+        <p>Employee enters his username and password to domain joined computer (windows ad) then KDC checks if it is true KDC allows access and gives TGT to that user.</p>
+        <p>TGT is user's identity card, it has all information of user such as name, date of account creation, security information, groups etc. There is an expiration date of TGT, mostly 10 hours by default.</p>
+        <blockquote>TGT is encrypted by KDC's secret key which only KDC knows. Even the user himself can not change or read it. Along with TGT, KDC also provides a session key which is encrypted using the user's password.</blockquote>
+
+        <h3>TGS</h3>
+        <p>Now, after receiving TGT, the user uses his TGT every time whenever he wants to access a service. User provides his TGT to KDC telling that he wants to access a service. KDC checks TGT expiration time, validation, etc. After that, KDC gives TGS to that user. Also known as Service Ticket (ST).</p>
+        <blockquote>TGS is encrypted using the secret key of the service the user wanted to access. Therefore the user can not read the TGS he holds, and each TGS is unique. On the other hand, the service can read the TGS the user provides, because it is encrypted using the service's own secret key.</blockquote>
+
+        <h2>Misconfiguration which an attacker can take advantage of...</h2>
+        <p>Now let's talk about the AS-REP Roasting attack. Remember the process where a user gets his TGT? User enters his username and password, and if correct, KDC gives TGT and a session key.</p>
+        <p>That process where a user proves he knows his credentials is called Pre-Authentication.</p>
+        <p>Sometimes administrators can disable Pre-Authentication. When disabled, a user gets his TGT without any prior authentication. As an attacker, we can just enumerate those users, and if some of them have disabled <strong>Pre-Authentication</strong>, we can just make a request for that user. What we actually need is the session key that comes with the TGT, because the session key is encrypted with the user's secret key derived from the password, so we try an offline hash cracking method to retrieve the user's password.</p>
+        <p>What an attacker needs: a user list, or 1 valid credential, to enumerate all Active Directory users.</p>
+
+        <p>Using user credentials to enumerate:</p>
+        <pre><code>impacket-GetNPUsers inlanefreight.local/htb-student</code></pre>
+
+        <div class="image-note">
+          // image placeholder &mdash; add your terminal screenshot here.<br>
+          Replace this block with: &lt;img src="../img/posts/your-image.png" alt="..."&gt;
+        </div>
+
+        <p>Here I targeted the inlanefreight.local domain with htb-student, and we find out 3 users which have "Pre-Authentication" disabled. To request their hash:</p>
+        <pre><code>impacket-GetNPUsers inlanefreight.local/htb-student -request</code></pre>
+
+      </div>
+    </article>
+  </div>
+
+  <div class="footer">offsec1337 &copy; 2026 &mdash; stay legal, hack responsibly.</div>
+
+  <script>
+    // If any real image fails to load (broken link, moved file, etc.), hide it instead of leaving a blank gap.
+    document.querySelectorAll('.post-body img').forEach(function (img) {
+      img.addEventListener('error', function () { img.classList.add('broken-img'); });
+    });
+  </script>
+  <script src="../js/posts-data.js"></script>
+  <script src="../js/search.js"></script>
+</body>
+</html>

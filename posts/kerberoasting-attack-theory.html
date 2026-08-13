@@ -88,13 +88,12 @@
         <p>Using user credentials to enumerate:</p>
         <pre><code>impacket-GetNPUsers inlanefreight.local/htb-student</code></pre>
 
-        <div class="image-note">
-          // image placeholder &mdash; add your terminal screenshot here.<br>
-          Replace this block with: &lt;img src="../img/posts/your-image.png" alt="..."&gt;
-        </div>
-
-        <p>Here I targeted the inlanefreight.local domain with htb-student, and we find out 3 users which have "Pre-Authentication" disabled. To request their hash:</p>
+        <p>Here I targeted the inlanefreight.local domain with htb-student, to find users who has "Pre-Authentication" disabled. Request their hash with command:</p>
         <pre><code>impacket-GetNPUsers inlanefreight.local/htb-student -request</code></pre>
+        <div class="image-note">
+          <img src="asrep.png" alt="Title">
+        </div>
+        <p>After recieving their hash we can try offline brute force attack to crack them.</p>
 
       </div>
     </article>

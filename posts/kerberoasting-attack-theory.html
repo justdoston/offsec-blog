@@ -93,6 +93,32 @@
         <img src="asrep.png" alt="Title">
         <p>After recieving their hash we can try offline brute force attack to crack them.</p>
 
+        <h3>Kerberoasting</h3>
+        <p>This is another type of attack involves offline hash cracking. Now we target user accounts which registered <b>SPN (Service Principal Name)</b></p>
+        <h2>Service Principal Name (SPN)</h2>
+        <p>When a service is registered, a Service Principal Name (SPN) is added to Active Directory and is an alias to an actual AD Account.</p>
+        <blockquote>By default services (smb, mssql, http) in windows works on computer accounts and computer accounts practically immune to brute force, because their password 120 character with constantly changing, our target is service tied to user account, because user account created by human and can be crackable</blockquote>
+        <p>Read it <a href="https://learn.microsoft.com/en-us/windows/win32/ad/service-principal-names" target="_blank" rel="noopener">here</a> about SPN</p>
+        <p><b>Preparing to enumerate and attack:</b></p>
+        <ol>
+          <li>We need at least 1 valid user credentials from active directory, does not have to be high privileged</li>
+          <li>Using impacket tools we can enumerate</li>
+          <li>If we find user account with SPN, we just make request</li>
+          <li>Now remember when KDC gives us ST (Service Ticket) KDC encrypts it using service's secret key derived from password hash</li>
+          <li>We will take advantage of it and crack hash to retrieve password of service</li>
+        </ol>
+        <p><b>Kerberoasting attack automation from linux</b></p>
+        <pre><code>impacket-GetUserSPNs inlanefreight.local/htb-student -request</code>
+        <p>Next step similar to above attack, we will crack hashes.</p>
+        <h3>Conclusion</h3>
+        <p>This is beginner friendly basic explanation of kerberos and it is a scratch from surface or I should say drop from ocean to make you imagine how big kerberos concept is. We still did not talk about tens of concepts and for us hackers understanding theory more important than just copying commands from cheetshets. Not to mention there might be slight inaccuracies that I missed, but point of this blog basic explanation not literal technical definition. Stay tuned for more kerberos blogs ;)</p>
+        <p>Further reading:</p>
+        <ul>
+          <li>https://learn.microsoft.com/en-us/windows/win32/ad/mutual-authentication-using-kerberos</li>
+          <li>https://learn.microsoft.com/en-us/windows-server/security/kerberos/kerberos-authentication-overview</li>
+          <li>https://www.geeksforgeeks.org/computer-networks/kerberos/</li>
+          <li>https://www.simplilearn.com/what-is-kerberos-article</li>
+        </ul>
       </div>
     </article>
   </div>

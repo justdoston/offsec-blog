@@ -419,6 +419,334 @@ done
 curl http://target.com/sitemap.xml | grep -oP '<loc>K[^<]*' | while read url; do
     echo "$url" >> discovered_urls.txt
 done</code></pre>
+<h1>Technology identification</h1>
+<h2>Technology stack identification</h2>
+<h3>Identify Programming Language</h3>
+<pre><code># Check file extensions in URLs:
+# .php = PHP
+# .aspx = ASP.NET
+# .jsp = Java
+# .py = Python
+# .rb = Ruby
+
+# Check HTTP headers:
+curl -I http://target.com | grep -i "x-powered-by\|server"
+
+# Check error messages:
+# Visit: http://target.com/nonexistent.php
+# Look for language-specific errors
+
+# Check source code:
+curl http://target.com | grep -i "php\|asp\|jsp"
+
+# Using whatweb:
+whatweb http://target.com
+
+# Check for framework files:
+curl http://target.com/package.json  # Node.js
+curl http://target.com/composer.json  # PHP
+curl http://target.com/Gemfile        # Ruby</code></pre>
+<h3>Identify Web Framework</h3>
+<pre><code># Check for framework signatures:
+# Laravel: X-Powered-By: PHP/Laravel
+# Django: X-Frame-Options: DENY
+# Rails: X-Runtime header
+# Express: X-Powered-By: Express
+
+# Check common paths:
+curl http://target.com/admin
+curl http://target.com/wp-admin      # WordPress
+curl http://target.com/wp-content
+curl http://target.com/wp-includes
+
+# Check for framework files:
+curl http://target.com/.env          # Laravel
+curl http://target.com/package.json  # Node.js
+curl http://target.com/Gemfile       # Rails
+curl http://target.com/pom.xml       # Java/Maven
+
+# Using whatweb:
+whatweb http://target.com
+
+# Check HTML source:
+curl http://target.com | grep -i "wordpress\|drupal\|joomla"</code></pre>
+<h3>Identify JavaScript libraries</h3>
+<pre><code># Check HTML source:
+curl http://target.com | grep -i "jquery\|react\|angular\|vue"
+
+# Check for common JS files:
+curl http://target.com/js/jquery.js
+curl http://target.com/js/react.js
+curl http://target.com/js/angular.js
+
+# Check browser console:
+# Open DevTools and check for framework errors
+
+# Check package.json:
+curl http://target.com/package.json
+
+# Check for source maps:
+curl http://target.com/js/app.js.map
+
+# Using builtwith:
+# Visit: https://builtwith.com/target.com</code></pre>
+<h3>Identify CMS platforms</h3>
+<pre><code># WordPress detection:
+curl http://target.com/wp-admin
+curl http://target.com/wp-content
+curl http://target.com/wp-includes
+curl http://target.com/wp-login.php
+curl http://target.com/readme.html
+curl http://target.com/license.txt
+
+# Drupal detection:
+curl http://target.com/CHANGELOG.txt
+curl http://target.com/INSTALL.txt
+curl http://target.com/misc/drupal.js
+
+# Joomla detection:
+curl http://target.com/administrator
+curl http://target.com/components
+
+# Check for CMS-specific files:
+curl http://target.com/wp-config.php.bak
+curl http://target.com/sites/default/settings.php
+
+# Using wpscan for WordPress:
+wpscan --url http://target.com --enumerate</code></pre>
+<h3>Identify Database System</h3>
+<pre><code># Check error messages:
+# MySQL errors: "mysql_fetch_array"
+# PostgreSQL errors: "pg_query"
+# MSSQL errors: "Microsoft SQL Server"
+
+# Check connection strings:
+curl http://target.com/config.php
+curl http://target.com/.env
+
+# Check for database files:
+curl http://target.com/database.sql
+curl http://target.com/db.sql
+
+# Check default ports:
+nmap -p 3306 target.com  # MySQL
+nmap -p 5432 target.com  # PostgreSQL
+nmap -p 1433 target.com  # MSSQL
+nmap -p 27017 target.com # MongoDB
+
+# Check for database admin panels:
+curl http://target.com/phpmyadmin
+curl http://target.com/adminer.php</code></pre>
+<h2>API and Endpoint Discovery</h2>
+<h3>API endpoint discovery</h3>
+<pre><code># Common API paths:
+/api/v1
+/api/v2
+/rest
+/graphql
+/soap
+/jsonrpc
+
+# Check for API documentation:
+curl http://target.com/api/docs
+curl http://target.com/swagger.json
+curl http://target.com/openapi.json
+curl http://target.com/api-docs
+
+# Check robots.txt:
+curl http://target.com/robots.txt
+
+# Check sitemap:
+curl http://target.com/sitemap.xml
+
+# Using gobuster:
+gobuster dir -u http://target.com -w /usr/share/wordlists/api-list.txt
+
+# Check JavaScript files for API calls:
+curl http://target.com/js/app.js | grep -i "api\|endpoint\|fetch"</code></pre>
+<h3>REST API discovery</h3>
+<pre><code># Common REST endpoints:
+GET    /api/users
+POST   /api/users
+PUT    /api/users/1
+DELETE /api/users/1
+
+# Test common endpoints:
+curl http://target.com/api/users
+curl http://target.com/api/products
+curl http://target.com/api/orders
+
+# Check for API versioning:
+curl http://target.com/api/v1/users
+curl http://target.com/api/v2/users
+
+# Check OPTIONS method:
+curl -X OPTIONS http://target.com/api/users
+
+# Check for CORS:
+curl -H "Origin: http://evil.com" -I http://target.com/api/users
+
+# Using ffuf:
+ffuf -w /usr/share/wordlists/api-endpoints.txt -u http://target.com/api/FUZZ</code></pre>
+<h3>GraphQL endpoint discovery</h3>
+<pre><code># Common GraphQL paths:
+/graphql
+/graphiql
+/graphql/console
+/v1/graphql
+/api/graphql
+
+# Test GraphQL endpoint:
+curl -X POST http://target.com/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ __schema { types { name } } }"}'
+
+# Introspection query:
+curl -X POST http://target.com/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ __type(name: "Query") { fields { name } } }"}'
+
+# Check for GraphiQL:
+curl http://target.com/graphiql
+
+# Using graphw00f:
+graphw00f http://target.com/graphql</code></pre>
+<h3>SOAP and XML-RPC discovery</h3>
+<pre><code># Check for SOAP:
+curl http://target.com/soap
+curl http://target.com/soap.php
+curl http://target.com/soap.wsdl
+curl http://target.com/wsdl
+
+# Check for XML-RPC (WordPress):
+curl -X POST http://target.com/xmlrpc.php \
+  -H "Content-Type: text/xml" \
+  -d '&lt;?xml version="1.0"?&gt;&lt;methodCall&gt;&lt;methodName&gt;system.listMethods&lt;/methodName>&lt;/methodCall&gt;'
+
+# Check for WSDL:
+curl http://target.com/service.wsdl
+curl http://target.com/?wsdl
+
+# SOAP request:
+curl -X POST http://target.com/soap \
+  -H "Content-Type: text/xml" \
+  -d '&lt;?xml version="1.0"?&gt;&lt;soap:Envelope&gt;...&lt;/soap:Envelope&gt;'</code></pre>
+  <h3>Webhook and callback discovery</h3>
+  <pre><code># Check for webhook endpoints:
+/webhook
+/callback
+/notify
+/callback.php
+/webhook.php
+
+# Check JavaScript for webhook URLs:
+curl http://target.com/js/app.js | grep -i "webhook\|callback"
+
+# Check for OAuth callbacks:
+/oauth/callback
+/auth/callback
+/callback
+
+# Check for payment callbacks:
+/payment/callback
+/stripe/webhook
+/paypal/ipn
+
+# Test endpoints:
+curl -X POST http://target.com/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"test":"data"}'</code></pre>
+  <h2>Error message analysis</h2>
+  <h3>Trigger error message</h3>
+  <code><pre># SQL injection errors:
+http://target.com/page?id='
+http://target.com/page?id="
+http://target.com/page?id=1'
+
+# File inclusion errors:
+http://target.com/page?file=../../etc/passwd
+http://target.com/page?include=nonexistent.php
+
+# Path traversal errors:
+http://target.com/../../etc/passwd
+
+# Invalid file extensions:
+http://target.com/page.xyz
+
+# Missing parameters:
+http://target.com/page?
+http://target.com/api/endpoint
+
+# Invalid HTTP methods:
+curl -X INVALID http://target.com/page</pre></code>
+<h3>Extract information from errors</h3>
+<pre><code># Look for:
+# - File paths
+# - Database errors
+# - Stack traces
+# - Version information
+# - Configuration details
+# - Usernames
+# - Internal IPs
+
+# Common error patterns:
+# PHP: "Warning: include(/path/to/file.php)"
+# Python: "FileNotFoundError: [Errno 2]"
+# Java: "java.io.FileNotFoundException"
+# .NET: "System.IO.FileNotFoundException"
+
+# Database errors:
+# MySQL: "You have an error in your SQL syntax"
+# PostgreSQL: "ERROR: syntax error"
+# MSSQL: "Unclosed quotation mark"
+
+# Save errors for analysis:
+curl http://target.com/error > error.html</code></pre>
+<h3>Stack trace analysis</h3>
+<pre><code># Look for stack traces in:
+# - Error pages
+# - API responses
+# - Log files
+# - Debug mode output
+
+# Common stack trace information:
+# - File paths
+# - Function names
+# - Line numbers
+# - Variable values
+# - Database queries
+# - Configuration values
+
+# Example stack trace:
+# at com.example.App.main(App.java:42)
+# at java.lang.Thread.run(Thread.java:748)
+
+# Extract file paths:
+grep -r "at.*\.java:" error.html
+grep -r "File.*line" error.html
+
+# Extract function names:
+grep -r "function.*(" error.html</code></pre>
+<h3>Debug mode detection</h3>
+<pre><code># Check for debug parameters:
+http://target.com/page?debug=1
+http://target.com/page?debug=true
+
+# Check for debug headers:
+curl -I http://target.com | grep -i "x-debug"
+
+# Check for verbose errors:
+# Detailed error messages indicate debug mode
+
+# Check for debug files:
+curl http://target.com/debug.log
+curl http://target.com/error.log
+
+# Check JavaScript console:
+# Open DevTools and check for debug messages
+
+# Check for source maps:
+curl http://target.com/js/app.js.map</code></pre>
       </div>
     </article>
   </div>

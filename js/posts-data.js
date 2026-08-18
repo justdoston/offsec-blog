@@ -19,4 +19,10 @@ const POSTS = [
     slug: "kerberoasting-attack-theory",
     date: "2026-08-08"
   }
+  {
+    title: "Web enumeration cheat sheet",
+    excerpt: "Cheat sheet for web",
+    slug: "web-enumeration-cheat-sheet",
+    date: "2026-08-18"
+  }
 ];

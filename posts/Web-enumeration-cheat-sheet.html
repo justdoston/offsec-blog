@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YOUR POST TITLE HERE :: offsec1337</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-base="../">
+  <nav class="topnav">
+    <div class="brand"><span class="accent">offsec</span>1337<span class="caret">_</span></div>
+    <div class="nav-right">
+      <ul class="nav-links">
+        <li><a href="../index.html">home</a></li>
+        <li><a href="../about.html">about</a></li>
+      </ul>
+      <div class="nav-search" id="nav-search">
+        <button class="search-toggle" id="search-toggle" aria-label="Search posts" title="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.4" y2="16.4"/></svg>
+        </button>
+        <div class="search-panel" id="search-panel">
+          <input type="text" id="search-input" placeholder="search posts..." autocomplete="off">
+          <div class="search-results" id="search-results">
+            <div class="search-hint">// start typing to search posts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <a class="back-link" href="../index.html">&larr; back to all posts</a>
+
+    <article class="post-full">
+      <div class="date">Month DD, YYYY</div>
+      <h1>Web enumeration cheat sheet</h1>
+
+      <div class="post-body">
+
+        <!-- Write your post below using plain HTML tags:
+             <p>...</p>                 - normal paragraph
+             <h2>...</h2> / <h3>...</h3> - section headings
+             <ul><li>...</li></ul>       - bullet list
+             <ol><li>...</li></ol>       - numbered list
+             <blockquote>...</blockquote> - highlighted quote/callout
+             <pre><code>...</code></pre> - monospace code block
+             <img src="../img/posts/filename.png" alt="..."> - image
+                (put image files in the img/posts/ folder first)
+                <a href="https://github.com/fortra/impacket" target="_blank" rel="noopener">Impacket</a>
+        -->
+
+        <h1>Directory brute forcing</h1>
+        <h3>Directory brute forcing with gobuster</h3>
+        <pre><code># Basic directory scan:
+gobuster dir -u http://target.com -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+
+# With extensions:
+gobuster dir -u http://target.com -w wordlist.txt -x php,html,txt
+
+# With status codes:
+gobuster dir -u http://target.com -w wordlist.txt -s 200,204,301,302,307,401,403
+
+# Recursive scan:
+gobuster dir -u http://target.com -w wordlist.txt -r
+
+# With threads:
+gobuster dir -u http://target.com -w wordlist.txt -t 50
+
+# Exclude status codes:
+gobuster dir -u http://target.com -w wordlist.txt -b 404,403</code></pre>
+<h3>Directory brute forcing with dirb</h3>
+<pre><code># Basic scan:
+dirb http://target.com
+
+# With custom wordlist:
+dirb http://target.com /usr/share/wordlists/dirb/common.txt
+
+# With extensions:
+dirb http://target.com -X .php,.html,.txt
+
+# With cookies:
+dirb http://target.com -c "session=abc123"
+
+# With user agent:
+dirb http://target.com -a "Mozilla/5.0"
+
+# Recursive scan:
+dirb http://target.com -r
+
+# Exclude status codes:
+dirb http://target.com -N 404,403</code></pre>
+<h3>Directory brute forcing with ffuf</h3>
+<pre><code># Basic scan:
+ffuf -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -u http://target.com/FUZZ
+
+# With extensions:
+ffuf -w wordlist.txt -u http://target.com/FUZZ -e .php,.html,.txt
+
+# Filter by status code:
+ffuf -w wordlist.txt -u http://target.com/FUZZ -fc 404
+
+# Filter by size:
+ffuf -w wordlist.txt -u http://target.com/FUZZ -fs 0
+
+# With cookies:
+ffuf -w wordlist.txt -u http://target.com/FUZZ -b "session=abc123"
+
+# Recursive scan:
+ffuf -w wordlist.txt -u http://target.com/FUZZ -recursion -recursion-depth 2</code></pre>
+<h3>Custom wordlist creation</h3>
+<pre><code># Based on technology:
+# WordPress:
+wp-admin
+wp-content
+wp-includes
+wp-login.php
+
+# Laravel:
+/app
+/config
+/storage
+/vendor
+
+# Django:
+/admin
+/static
+/media
+
+# Combine wordlists:
+cat wordlist1.txt wordlist2.txt > combined.txt
+sort -u combined.txt > unique.txt
+
+# Add common extensions:
+for ext in php html txt; do
+    sed "s/$/.$ext/" wordlist.txt >> extended.txt
+done
+
+# Generate based on domain:
+echo "admin" >> custom.txt
+echo "administrator" >> custom.txt
+echo "login" >> custom.txt</code></pre>
+<h3>Directory discovery autmation</h3>
+<pre><code># Bash script:
+#!/bin/bash
+wordlist="/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"
+target="http://target.com"
+
+while IFS= read -r dir; do
+    response=$(curl -s -o /dev/null -w "%{http_code}" "$target/$dir")
+    if [ "$response" != "404" ]; then
+        echo "[$response] $target/$dir"
+    fi
+done < "$wordlist"
+
+# Python script:
+import requests
+from concurrent.futures import ThreadPoolExecutor
+
+def check_dir(url, directory):
+    try:
+        r = requests.get(f"{url}/{directory}", timeout=5)
+        if r.status_code != 404:
+            print(f"[{r.status_code}] {url}/{directory}")
+    except:
+        pass
+
+with open("wordlist.txt") as f:
+    dirs = [line.strip() for line in f]
+
+with ThreadPoolExecutor(max_workers=50) as executor:
+    executor.map(lambda d: check_dir("http://target.com", d), dirs)</code></pre>
+    <h1>File discovery and backup files</h1>
+    <h3>Common backup file discovery</h3>
+    <pre><code># Common backup extensions:
+.bak
+.old
+.backup
+~
+.swp
+.tmp
+.temp
+.orig
+.save
+
+# Test common files:
+curl http://target.com/index.php.bak
+curl http://target.com/config.php.old
+curl http://target.com/database.sql.bak
+curl http://target.com/.env.backup
+
+# Using gobuster:
+gobuster dir -u http://target.com -w wordlist.txt -x bak,old,backup,swp,tmp
+
+# Using ffuf:
+ffuf -w wordlist.txt -u http://target.com/FUZZ -e .bak,.old,.backup
+
+# Check for version control:
+curl http://target.com/.git
+curl http://target.com/.svn
+curl http://target.com/.hg</code></pre>
+<h3>Configuration file discovery</h3>
+<pre><code># Common config files:
+config.php
+config.inc.php
+config.json
+.env
+.htaccess
+web.config
+settings.php
+database.php
+db.php
+
+# Test common paths:
+curl http://target.com/config.php
+curl http://target.com/.env
+curl http://target.com/config.json
+curl http://target.com/settings.php
+
+# Check for exposed configs:
+curl http://target.com/phpinfo.php
+curl http://target.com/info.php
+
+# Using gobuster:
+gobuster dir -u http://target.com -w config-wordlist.txt
+
+# Check for .env files:
+curl http://target.com/.env
+curl http://target.com/.env.local
+curl http://target.com/.env.production</code></pre>
+<h3>Source code file discovery</h3>
+<pre><code># Common source files:
+index.php
+main.js
+app.py
+server.rb
+config.js
+
+# Check for exposed source:
+curl http://target.com/index.php
+curl http://target.com/app.js
+curl http://target.com/main.py
+
+# Check for source maps:
+curl http://target.com/js/app.js.map
+curl http://target.com/dist/main.js.map
+
+# Check for unminified files:
+curl http://target.com/js/app.js
+curl http://target.com/css/style.css
+
+# Check for version control:
+curl http://target.com/.git/config
+curl http://target.com/.svn/entries
+
+# Check for IDE files:
+curl http://target.com/.idea
+curl http://target.com/.vscode</code></pre>
+<h3>Log file discovery</h3>
+<pre><code># Common log files:
+access.log
+error.log
+debug.log
+application.log
+server.log
+
+# Test common paths:
+curl http://target.com/logs/access.log
+curl http://target.com/var/log/error.log
+curl http://target.com/logs/application.log
+
+# Check for exposed logs:
+curl http://target.com/error.log
+curl http://target.com/debug.log
+
+# Using gobuster:
+gobuster dir -u http://target.com -w log-wordlist.txt
+
+# Check for application-specific logs:
+curl http://target.com/wp-content/debug.log  # WordPress
+curl http://target.com/var/log/apache2/access.log</code></pre>
+<h3>Database file discovery</h3>
+<pre><code># Common database files:
+database.sql
+db.sql
+dump.sql
+backup.sql
+data.db
+database.db
+
+# Test common paths:
+curl http://target.com/database.sql
+curl http://target.com/db/dump.sql
+curl http://target.com/backup.sql
+
+# Check for SQLite databases:
+curl http://target.com/data.db
+curl http://target.com/database.db
+
+# Using gobuster:
+gobuster dir -u http://target.com -w db-wordlist.txt -x sql,db
+
+# Check for database backups:
+curl http://target.com/backup/database.sql.gz
+curl http://target.com/dumps/db.sql.bak</code></pre>
+<h1>Sitemaps and robots.txt analysis</h1>
+<h3>Robots.txt analysis</h3>
+<pre><code># Fetch robots.txt:
+curl http://target.com/robots.txt
+wget http://target.com/robots.txt
+
+# Common entries:
+User-agent: *
+Disallow: /admin
+Disallow: /private
+Disallow: /internal
+
+# Check for sitemap reference:
+Sitemap: http://target.com/sitemap.xml
+
+# Test disallowed paths:
+curl http://target.com/admin
+curl http://target.com/private
+curl http://target.com/internal
+
+# Look for:
+# - Hidden directories
+# - Admin panels
+# - API endpoints
+# - Configuration files</code></pre>
+<h3>Sitemap.xml analysis</h3>
+<pre><code># Fetch sitemap:
+curl http://target.com/sitemap.xml
+curl http://target.com/sitemap_index.xml
+
+# Parse sitemap:
+curl http://target.com/sitemap.xml | grep -oP '<loc>K[^<]*'
+
+# Check for multiple sitemaps:
+curl http://target.com/sitemap1.xml
+curl http://target.com/sitemap2.xml
+
+# Extract all URLs:
+curl http://target.com/sitemap.xml | xmllint --format - | grep -oP '<loc>K[^<]*'
+
+# Save for analysis:
+curl http://target.com/sitemap.xml > sitemap.xml
+
+# Look for:
+# - Hidden pages
+# - Admin areas
+# - API endpoints
+# - Sensitive paths</code></pre>
+<h3>Cross-refence sitemap with robots.txt</h3>
+<pre><code># Get both files:
+curl http://target.com/robots.txt > robots.txt
+curl http://target.com/sitemap.xml > sitemap.xml
+
+# Extract disallowed paths from robots.txt:
+grep -i "disallow:" robots.txt | cut -d' ' -f2
+
+# Extract URLs from sitemap:
+grep -oP '<loc>K[^<]*' sitemap.xml
+
+# Compare:
+# - Paths in sitemap but disallowed in robots.txt
+# - Paths disallowed but accessible
+# - Missing paths
+
+# Test each path:
+for path in $(grep -oP '<loc>K[^<]*' sitemap.xml); do
+    curl -I "$path"
+done</code></pre>
+<h3>Check for additional sitemaps</h3>
+<pre><code># Common sitemap locations:
+/sitemap.xml
+/sitemap_index.xml
+/sitemap1.xml
+/sitemap-news.xml
+/sitemap-images.xml
+/robots.txt (may reference sitemap)
+
+# Check robots.txt for sitemap:
+curl http://target.com/robots.txt | grep -i sitemap
+
+# Try common variations:
+curl http://target.com/sitemap.xml
+curl http://target.com/sitemap_index.xml
+curl http://target.com/sitemap-news.xml
+curl http://target.com/sitemap-images.xml
+curl http://target.com/sitemap-products.xml
+
+# Check for compressed sitemaps:
+curl http://target.com/sitemap.xml.gz
+
+# Check subdomains:
+curl http://www.target.com/sitemap.xml
+curl http://blog.target.com/sitemap.xml</code></pre>
+<h3>Extract and enumerate discovered path</h3>
+<pre><code># Extract URLs from sitemap:
+curl http://target.com/sitemap.xml | grep -oP '<loc>K[^<]*' > urls.txt
+
+# Test each URL:
+while IFS= read -r url; do
+    status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+    echo "[$status] $url"
+done < urls.txt
+
+# Check for additional endpoints:
+for url in $(cat urls.txt); do
+    # Try common variations:
+    curl -I "$url/admin"
+    curl -I "$url/api"
+    curl -I "$url/config"
+done
+
+# Save results:
+curl http://target.com/sitemap.xml | grep -oP '<loc>K[^<]*' | while read url; do
+    echo "$url" >> discovered_urls.txt
+done</code></pre>
+      </div>
+    </article>
+  </div>
+
+  <div class="footer">offsec1337 &copy; 2026 &mdash; stay legal, hack responsibly.</div>
+
+  <script>
+    document.querySelectorAll('.post-body img').forEach(function (img) {
+      img.addEventListener('error', function () { img.classList.add('broken-img'); });
+    });
+  </script>
+  <script src="../js/posts-data.js"></script>
+  <script src="../js/search.js"></script>
+</body>
+</html>

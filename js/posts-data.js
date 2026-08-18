@@ -18,7 +18,7 @@ const POSTS = [
     excerpt: "Theory behind Kerberoasting - how Kerberos authentication works, and how disabled Pre-Authentication can be abused via AS-REP Roasting.",
     slug: "kerberoasting-attack-theory",
     date: "2026-08-08"
-  }
+  },
   {
     title: "Web enumeration cheat sheet",
     excerpt: "Cheat sheet for web",

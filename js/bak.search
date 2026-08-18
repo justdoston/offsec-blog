@@ -4,18 +4,11 @@
   var input = document.getElementById('search-input');
   var resultsBox = document.getElementById('search-results');
 
-  if (!toggle || !panel || !input || !resultsBox) return;
+  if (!toggle || !panel || !input || !resultsBox || typeof POSTS === 'undefined') return;
 
+  // basePath lets this script work whether the page is at the site root
+  // (index.html, about.html) or one level down (posts/whatever.html)
   var basePath = document.body.getAttribute('data-base') || '';
-  var cachedPosts = null;
-
-  function loadPosts() {
-    if (cachedPosts) return Promise.resolve(cachedPosts);
-    return fetch(basePath + 'js/posts.json', { cache: 'no-store' })
-      .then(function (res) { return res.json(); })
-      .then(function (posts) { cachedPosts = posts; return posts; })
-      .catch(function () { return []; });
-  }
 
   function escapeHtml(str) {
     var div = document.createElement('div');
@@ -27,13 +20,13 @@
     return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
-  function renderResults(posts, query) {
+  function renderResults(query) {
     if (!query) {
       resultsBox.innerHTML = '<div class="search-hint">// start typing to search posts</div>';
       return;
     }
     var q = query.toLowerCase();
-    var matches = posts.filter(function (p) {
+    var matches = POSTS.filter(function (p) {
       return p.title.toLowerCase().indexOf(q) !== -1 ||
              (p.excerpt || '').toLowerCase().indexOf(q) !== -1;
     }).slice(0, 8);
@@ -53,7 +46,7 @@
 
   function openPanel() {
     panel.classList.add('open');
-    loadPosts().then(function (posts) { renderResults(posts, input.value.trim()); });
+    renderResults(input.value.trim());
   }
   function closePanel() { panel.classList.remove('open'); }
 
@@ -68,9 +61,7 @@
   });
 
   // Live search: fires on every keystroke, paste, or delete - no Enter needed
-  input.addEventListener('input', function () {
-    loadPosts().then(function (posts) { renderResults(posts, input.value.trim()); });
-  });
+  input.addEventListener('input', function () { renderResults(input.value.trim()); });
 
   document.addEventListener('click', function (e) {
     if (!panel.contains(e.target) && e.target !== toggle) closePanel();

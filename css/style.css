@@ -150,6 +150,20 @@ a:hover { color: #ff5c5c; text-decoration: underline; }
   font-size: 0.8rem;
 }
 
+/* ---------- Homepage matrix-rain background (index.html only) ---------- */
+#matrix-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+body.has-matrix-bg .topnav,
+body.has-matrix-bg .wrap,
+body.has-matrix-bg .footer {
+  position: relative;
+  z-index: 1;
+}
+
 /* ---------- Layout wrapper ---------- */
 .wrap { width: 92vw; max-width: 1400px; margin: 0 auto; padding: 40px 0 100px; }
 

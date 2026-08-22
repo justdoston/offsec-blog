@@ -10,5 +10,11 @@
     "excerpt": "Cheat sheet for web",
     "slug": "web-enumeration-cheat-sheet",
     "date": "2026-08-18"
+  },
+  {
+    "title": "Jailbreaking",
+    "excerpt": "Docker & Rbash escape, jailbreaking, docker abuse",
+    "slug": "jailbreaking",
+    "date": "2026-08-22"
   }
 ]

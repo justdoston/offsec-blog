@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A pentester's explanation of 68 Impacket tools on Kali Linux: command usage, protocols, permissions, authentication, and what results really mean.">
+  <title>Impacket Tools in Kali Linux — Usage, Theory &amp; What Happens Behind the Commands :: offsec1337</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-base="../">
+  <nav class="topnav">
+    <div class="brand"><span class="accent">offsec</span>1337<span class="caret">_</span></div>
+    <div class="nav-right">
+      <ul class="nav-links">
+        <li><a href="../index.html">home</a></li>
+        <li><a href="../about.html">about</a></li>
+      </ul>
+      <div class="nav-search" id="nav-search">
+        <button class="search-toggle" id="search-toggle" aria-label="Search posts" title="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.4" y2="16.4"/></svg>
+        </button>
+        <div class="search-panel" id="search-panel">
+          <input type="text" id="search-input" placeholder="search posts..." autocomplete="off">
+          <div class="search-results" id="search-results">
+            <div class="search-hint">// start typing to search posts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <a class="back-link" href="../index.html">&larr; back to all posts</a>
+
+    <article class="post-full">
+      <div class="date">Sep 21, 2026</div>
+      <h1>Impacket Tools in Kali Linux — Usage, Theory &amp; What Happens Behind the Commands</h1>
+
+      <div class="post-body">
+<p>It is important for hacker to know what he is doing when he is doing. I call it "Situational awareness" I know theoretical knowledge might be boring but without it we just copy/paste or try random things without knowing. If you can hack but do not know why you hacked you might as well be prompt engineer.
+</p>
+<nav aria-label="Article contents">
+<h2>In this post</h2>
+<ul>
+<li><a href="#before-commands">Before copying commands, understand what Impacket actually does</a>
+</li>
+<li><a href="#execution">Remote execution: what actually starts the process?</a>
+<p><a href="#tool-psexec">psexec</a> · <a href="#tool-smbexec">smbexec</a> · <a href="#tool-wmiexec">wmiexec</a> · <a href="#tool-dcomexec">dcomexec</a> · <a href="#tool-atexec">atexec</a> · <a href="#tool-wmiquery">wmiquery</a> · <a href="#tool-services">services</a> · <a href="#tool-tstool">tstool</a></p>
+</li>
+<li><a href="#directory">Directory and RPC enumeration: learn what the identity can see</a>
+<p><a href="#tool-getadusers">GetADUsers</a> · <a href="#tool-getadcomputers">GetADComputers</a> · <a href="#tool-dumpntlminfo">DumpNTLMInfo</a> · <a href="#tool-machine_role">machine_role</a> · <a href="#tool-getarch">getArch</a> · <a href="#tool-lookupsid">lookupsid</a> · <a href="#tool-samrdump">samrdump</a> · <a href="#tool-rpcdump">rpcdump</a> · <a href="#tool-rpcmap">rpcmap</a> · <a href="#tool-net">net</a> · <a href="#tool-netview">netview</a> · <a href="#tool-checkldapstatus">CheckLDAPStatus</a></p>
+</li>
+<li><a href="#kerberos">Kerberos: requesting tickets, inspecting them, and understanding delegation</a>
+<p><a href="#tool-gettgt">getTGT</a> · <a href="#tool-getst">getST</a> · <a href="#tool-getnpusers">GetNPUsers</a> · <a href="#tool-getuserspns">GetUserSPNs</a> · <a href="#tool-finddelegation">findDelegation</a> · <a href="#tool-getpac">getPac</a> · <a href="#tool-describeticket">describeTicket</a> · <a href="#tool-ticketconverter">ticketConverter</a> · <a href="#tool-ticketer">ticketer</a> · <a href="#tool-keylistattack">keylistattack</a></p>
+</li>
+<li><a href="#credentials">Credential material: identify where the secret is stored</a>
+<p><a href="#tool-secretsdump">secretsdump</a> · <a href="#tool-regsecrets">regsecrets</a> · <a href="#tool-get-gpppassword">Get-GPPPassword</a> · <a href="#tool-getlapspassword">GetLAPSPassword</a> · <a href="#tool-dpapi">dpapi</a> · <a href="#tool-mimikatz">mimikatz</a></p>
+</li>
+<li><a href="#directory-changes">Changing directory objects: which permission authorizes the change?</a>
+<p><a href="#tool-addcomputer">addcomputer</a> · <a href="#tool-changepasswd">changepasswd</a> · <a href="#tool-dacledit">dacledit</a> · <a href="#tool-owneredit">owneredit</a> · <a href="#tool-rbcd">rbcd</a> · <a href="#tool-badsuccessor">badsuccessor</a></p>
+</li>
+<li><a href="#files">SMB and registry access: read, write, and host files</a>
+<p><a href="#tool-smbclient">smbclient</a> · <a href="#tool-smbserver">smbserver</a> · <a href="#tool-karmasmb">karmaSMB</a> · <a href="#tool-reg">reg</a> · <a href="#tool-registry-read">registry-read</a> · <a href="#tool-attrib">attrib</a> · <a href="#tool-filetime">filetime</a></p>
+</li>
+<li><a href="#relay-applications">Relay and application protocols</a>
+<p><a href="#tool-ntlmrelayx">ntlmrelayx</a> · <a href="#tool-mssqlinstance">mssqlinstance</a> · <a href="#tool-mssqlclient">mssqlclient</a> · <a href="#tool-exchanger">exchanger</a> · <a href="#tool-rdp_check">rdp_check</a> · <a href="#tool-mqtt_check">mqtt_check</a></p>
+</li>
+<li><a href="#offline">Offline files: the acquisition happened before this command</a>
+<p><a href="#tool-esentutl">esentutl</a> · <a href="#tool-ntfs-read">ntfs-read</a> · <a href="#tool-samedit">samedit</a></p>
+</li>
+<li><a href="#specialized">Specialized techniques and older vulnerability examples</a>
+<p><a href="#tool-wmipersist">wmipersist</a> · <a href="#tool-goldenpac">goldenPac</a> · <a href="#tool-raisechild">raiseChild</a> · <a href="#tool-sambapipe">sambaPipe</a> · <a href="#tool-kintercept">kintercept</a></p>
+</li>
+<li><a href="#packets">Packet examples: understand what is visible on the wire</a>
+<p><a href="#tool-ping">ping</a> · <a href="#tool-ping6">ping6</a> · <a href="#tool-sniff">sniff</a> · <a href="#tool-sniffer">sniffer</a> · <a href="#tool-split">split</a></p>
+</li>
+<li><a href="#choose-and-interpret">Choosing a tool and interpreting its result</a>
+</li>
+<li><a href="#references">Further reading and implementation references</a>
+</li>
+</ul>
+</nav>
+
+<h2 id="before-commands">Before copying commands, understand what Impacket actually does</h2>
+
+<p>Most of us meet Impacket when we see a command like <code>impacket-psexec</code> in a walkthrough. We put credentials into it, press Enter, and a shell appears. But how did it appear? Did SMB execute our command? Why did one account work while another account could only list shares? Let's focus on the process behind the command first.</p>
+
+<p>Impacket is a Python collection for working with network protocols. Its example programs use those protocols to talk to Windows, Active Directory, databases, and other services. Some query information, some perform administrative operations, some work on local evidence files, and some demonstrate particular vulnerabilities. The name of the tool does not tell us which permission check the server will apply.</p>
+
+<p>This post covers all <b>68 standalone Python examples</b> in the Kali package snapshot <code>python3-impacket 0.13.0+git20251120-9c2d8b6-0kali1</code>, reviewed on September 20, 2026. Kali is rolling, so another installation can have additional scripts or different options. We will explain useful command combinations and the major operating modes of every tool in this inventory; this is not a claim that every possible permutation of flags behaves the same on every Windows version.</p>
+
+<p>Examples use an imaginary assessment lab: <code>lab.example</code>, domain controller <code>dc01.lab.example</code> at <code>192.0.2.10</code>, member server <code>srv01.lab.example</code> at <code>192.0.2.20</code>, and Kali at <code>192.0.2.50</code>. <code>alice</code> is an ordinary domain user; <code>labadmin</code> has the specific administrative rights discussed in each example. Replace these names with your authorized lab. Commands below explain behavior; they are not a claim that every scenario was executed against a Windows lab.</p>
+
+<h3>Kali command names and version differences</h3>
+
+<pre><code>dpkg-query -W python3-impacket impacket-scripts
+command -v impacket-psexec
+impacket-psexec -h
+python3 /usr/share/doc/python3-impacket/examples/CheckLDAPStatus.py -h</code></pre>
+
+<p>The first command shows package versions. The second locates a launcher. Kali launchers normally start the corresponding script under <code>/usr/share/doc/python3-impacket/examples/</code>. A script can exist there without an <code>impacket-</code> launcher, so the last command shows the direct Python form. In this post the seven scripts without a launcher in the checked installation use that form. A locally installed Python library can also override the packaged library: a different version banner is a reason to check the Python environment before assuming an option or import is broken.</p>
+
+<p>Most tools use <code>-h</code>; <code>karmaSMB</code> and <code>mqtt_check</code> support <code>--help</code>. The old <code>ping</code>, <code>ping6</code>, <code>sniff</code>, <code>sniffer</code>, and <code>split</code> examples use positional arguments instead of the same help parser. Do not assume that passing <code>-h</code> to every old example is harmless help discovery.</p>
+
+<h3>Authentication and authorization are two different checks</h3>
+
+<p><b>Authentication:</b> who are you? A password, NT hash, or Kerberos ticket can establish an identity. <b>Authorization:</b> what may this identity do? Reading a share, writing a file, creating a service, reading a LAPS password, and replicating directory secrets are separate permissions. Valid credentials answer the first question. They do not answer all the others.</p>
+
+<p>SMB normally uses TCP 445 for shares and named pipes. LDAP commonly uses TCP 389, or 636 with TLS, to query directory objects. Kerberos uses the KDC on port 88; these examples commonly use TCP. RPC can travel inside SMB named pipes, or use TCP 135 to locate an interface on another negotiated TCP port. WMI and DCOM often need those additional RPC ports. SQL Server commonly listens on TCP 1433, but an instance can use another port. An open port proves reachability, not permission.</p>
+
+<h3>Read the target string carefully</h3>
+
+<pre><code>impacket-smbclient 'lab.example/alice@srv01.lab.example'
+impacket-GetADUsers 'lab.example/alice' -dc-ip 192.0.2.10 -all</code></pre>
+
+<p>In the SMB example, the part before <code>@</code> is the identity and the part after it is the server. The LDAP example takes a domain identity, with the DC selected separately. Omitting a plaintext password normally causes a prompt. Single quotes protect characters such as <code>$</code> in machine account names from the Linux shell. A local account belongs to the target computer, while a domain account belongs to AD; a similarly named local and domain user are not the same identity.</p>
+
+<h3>Password, NT hash, AES key, or ticket?</h3>
+
+<pre><code>impacket-smbclient 'lab.example/alice@srv01.lab.example' -hashes ':&lt;ALICE_NT_HASH&gt;'
+impacket-getTGT 'lab.example/alice' -aesKey '&lt;ALICE_AES_KEY&gt;' -dc-ip 192.0.2.10
+export KRB5CCNAME="$PWD/alice.ccache"
+impacket-smbclient -k -no-pass 'lab.example/alice@srv01.lab.example' -dc-ip 192.0.2.10</code></pre>
+
+<p>Angle-bracket values are placeholders, not literal keys. <code>-hashes</code> uses the format <code>LMHASH:NTHASH</code>; an empty LM half is commonly written as a leading colon. In an NTLM exchange, the NT hash can supply the secret used to calculate the challenge response. A captured NetNTLMv2 response is different: it is tied to a challenge and cannot simply be pasted here as an NT hash.</p>
+
+<p>An AES key is Kerberos key material. <code>getTGT</code> uses it to request a ticket from the KDC; it does not recover the account's password. <code>KRB5CCNAME</code> selects a credential cache. <code>-k</code> asks a compatible tool to use Kerberos, and <code>-no-pass</code> suppresses a password prompt. They do not create a ticket or grant additional rights. A cache must contain usable credentials, and some tools can fall back to supplied key material when the cache is insufficient.</p>
+
+<p>Kerberos normally needs the service's hostname and SPN, not just its IP address. Where available, <code>-target-ip</code> changes the network destination while preserving the hostname used for authentication. <code>-dc-ip</code> identifies the KDC; it is not a substitute for the target service. DNS, time synchronization, SPN registration, and permitted encryption types all matter. The NT hash is also the RC4 Kerberos key, but it is not an AES key, and an AES-only environment will not accept an RC4-only workflow.</p>
+
+<p>Do not transfer flags blindly between tools. For example, <code>getPac</code> does not expose the same Kerberos/cache switches as <code>getST</code>, and LDAP tools do not all spell their LDAPS option the same way. <code>-debug</code> helps explain an error, while <code>-ts</code> adds timestamps to logs; neither changes your remote permissions.</p>
+
+<h2 id="execution">Remote execution: what actually starts the process?</h2>
+
+<h2 id="tool-psexec">psexec — upload a service, start it, and communicate through named pipes</h2>
+
+<p>Windows administrators can manage services remotely. Impacket's PsExec implementation uses that ability and an embedded service executable called RemComSvc. SMB carries both the uploaded file and the RPC messages. SMB itself is not a universal “run this command” function.</p>
+
+<pre><code>impacket-psexec 'lab.example/labadmin@srv01.lab.example'
+impacket-psexec 'lab.example/labadmin@srv01.lab.example' 'whoami'
+impacket-psexec -k -no-pass -dc-ip 192.0.2.10 'lab.example/labadmin@srv01.lab.example' 'whoami'</code></pre>
+
+<p>The first command requests the default command interpreter. The second runs one command and returns its output. The third uses a suitable Kerberos cache instead of asking for a password. All three still need the same service and file permissions on the target.</p>
+
+<ol>
+<li>Authenticate to SMB and enumerate disk shares through the server service RPC interface.</li>
+<li>Find a writable share and upload the service executable. ADMIN$ is common, but the implementation can select another suitable writable disk share.</li>
+<li>Connect to the Service Control Manager through the <code>svcctl</code> named pipe, create a service whose executable path points to that upload, and start the service.</li>
+<li>Send the requested command to RemComSvc. The service launches the process and provides named pipes for input, output, and errors. Impacket connects those pipes to the terminal on Kali.</li>
+<li>Attempt to stop/delete the service and remove the uploaded executable when the session finishes.</li>
+</ol>
+
+<h3>Why does PsExec need write access?</h3>
+
+<p>The service executable must exist somewhere the target can execute it. Uploading it requires remote file write access. Creating and starting the service requires separate Service Control Manager permissions, normally obtained through an administrative account. An ordinary user with write access to a documents share cannot automatically create a Windows service. Likewise, service-management rights do not make an inaccessible share writable.</p>
+
+<p>The service is normally created to run as LocalSystem, so its child process commonly reports <code>nt authority\system</code>. This follows from the service account, not from SMB magically upgrading the login. Remote UAC token filtering can also make a local administrator's network token less powerful than expected.</p>
+
+<pre><code>impacket-psexec 'lab.example/labadmin@srv01.lab.example' -c ./lab-check.exe
+impacket-psexec 'lab.example/labadmin@srv01.lab.example' -path 'C:\Windows\System32' 'whoami'</code></pre>
+
+<p><code>-c</code> uploads an additional local executable for the service to launch; it adds another file-transfer step. <code>-path</code> sets the remote working directory. <code>-file</code> is different: it replaces the embedded RemCom-compatible service executable. <code>-service-name</code> and <code>-remote-binary-name</code> select names, not permissions. Avoid colliding with an existing service: the service-install helper can remove a same-named service before creating its own.</p>
+
+<p>For an assessment, distinguish “no writable share,” “access denied opening the service manager,” and “service started but pipes failed.” They are different stages. Uploads, service registration, process creation, and named-pipe activity are observable. Cleanup is attempted, not guaranteed, especially after interruption.</p>
+
+<h2 id="tool-smbexec">smbexec — use a service command line without uploading RemComSvc</h2>
+
+<pre><code>impacket-smbexec 'lab.example/labadmin@srv01.lab.example'
+impacket-smbexec 'lab.example/labadmin@srv01.lab.example' -mode SHARE -share 'C$'
+impacket-smbexec 'lab.example/labadmin@srv01.lab.example' -shell-type powershell</code></pre>
+
+<p>SMBExec also talks to the Service Control Manager over an SMB named pipe. Instead of uploading a dedicated service executable, it creates a service whose command line invokes the target's existing command processor. In this implementation, that command line builds a temporary batch file, runs the requested command, redirects its output, and removes the batch file. The service is deleted after execution.</p>
+
+<p>The default <code>SHARE</code> mode retrieves command output through a target share, normally <code>C$</code>. The second example makes that choice explicit. <code>-shell-type powershell</code> changes the command processor used for each request; it does not grant PowerShell-specific privileges. The resulting prompt is semi-interactive: commands are sent as separate remote executions, not a full interactive console with every terminal feature.</p>
+
+<p><code>-mode SERVER</code> starts an SMB server on Kali and has the target copy output back. That changes the return path and requires the target to reach Kali, plus permission to bind the local listening port. It does not remove service-creation requirements. “No uploaded service executable” also does not mean “no files written”: the batch file and output still matter. Processes normally run in the created service's LocalSystem context.</p>
+
+<h2 id="tool-wmiexec">wmiexec — ask WMI to create a process, then collect its output</h2>
+
+<pre><code>impacket-wmiexec 'lab.example/labadmin@srv01.lab.example' 'whoami'
+impacket-wmiexec 'lab.example/labadmin@srv01.lab.example' -share 'ADMIN$' 'whoami'
+impacket-wmiexec 'lab.example/labadmin@srv01.lab.example' -nooutput 'cmd.exe /c whoami'</code></pre>
+
+<p>WMI is Windows' management infrastructure. WMIExec authenticates through DCOM, connects to the WMI namespace, obtains <code>Win32_Process</code>, and calls its <code>Create</code> method. The execution path is DCOM/RPC, typically TCP 135 followed by a negotiated RPC endpoint. It does not install the PsExec service.</p>
+
+<p>By default the command redirects output to a temporary file and Kali retrieves that file over SMB, usually through <code>ADMIN$</code>. That is why both RPC access and SMB access can matter. <code>-share</code> changes the output share. <code>-nooutput</code> avoids establishing the SMB output connection and is useful for a single command whose result you do not need to read back. It cannot provide the normal interactive prompt.</p>
+
+<p>A successful process-creation call can coexist with failed output collection. If SMB is blocked or the selected share is inaccessible, “no output” is not proof that the command never ran. Check which stage failed before repeating a command that changes state. Remote WMI namespace and process-creation permissions are required, typically through administrator rights; the process normally uses the authenticated account's security context, not automatically LocalSystem.</p>
+
+<p><code>-shell-type powershell</code> changes the wrapper. <code>-silentcommand</code> invokes a supplied program without the usual <code>cmd.exe</code> output wrapper; shell built-ins such as <code>dir</code> are not standalone executables. <code>-codec</code> fixes text decoding when the remote code page differs from UTF-8, not authentication or execution.</p>
+
+<h2 id="tool-dcomexec">dcomexec — execute through a remote COM object</h2>
+
+<pre><code>impacket-dcomexec 'lab.example/labadmin@srv01.lab.example' -object MMC20 'whoami'
+impacket-dcomexec 'lab.example/labadmin@srv01.lab.example' -object ShellWindows -nooutput 'cmd.exe /c whoami'</code></pre>
+
+<p>COM objects expose methods to applications, and DCOM lets a client activate or call some objects remotely. This tool uses supported objects such as <code>MMC20</code>, <code>ShellWindows</code>, or <code>ShellBrowserWindow</code> to reach an execution method. Changing <code>-object</code> changes the object and invocation path; it does not guarantee that the object exists, is registered for remote activation, or is accessible to your account.</p>
+
+<p>Like WMIExec, the usual output path uses a temporary file and SMB retrieval. <code>-nooutput</code> removes that collection path for a one-shot command. The remote activation/access ACLs, account token, firewall, and DCOM hardening still apply. Process identity depends on the COM object's activation configuration; do not assume that every DCOM process will be SYSTEM. A failure to activate an object is different from a failed SMB file read.</p>
+
+<h2 id="tool-atexec">atexec — create and run a scheduled task over RPC</h2>
+
+<pre><code>impacket-atexec 'lab.example/labadmin@srv01.lab.example' 'whoami'
+impacket-atexec -k -no-pass 'lab.example/labadmin@srv01.lab.example' 'hostname'</code></pre>
+
+<p>Despite its name, this implementation uses the Task Scheduler RPC interface, not merely the old <code>at.exe</code> command. It registers a temporary task, runs it, waits for completion, and attempts to remove it. The ordinary task definition runs as LocalSystem. Command output is normally redirected into a temporary file and retrieved using SMB.</p>
+
+<p>The first example uses password authentication; the second selects Kerberos credentials already available to the tool. Both require permission to register and run the requested task. This is one-shot execution, so starting an interactive application does not turn the terminal into a full desktop session.</p>
+
+<p><code>-session-id</code> targets an existing logon session and changes the execution/output assumptions. <code>-silentcommand</code> avoids the normal command-processor wrapper and does not retrieve output. They are not general ways to bypass task permissions. An error reading the output file can happen after the task has already run. Task creation, execution, deletion, and temporary files can all be visible to defenders.</p>
+
+<h2 id="tool-wmiquery">wmiquery — query management information without requesting a shell</h2>
+
+<pre><code>impacket-wmiquery 'lab.example/alice@srv01.lab.example'
+impacket-wmiquery 'lab.example/labadmin@srv01.lab.example' -namespace '//./root/cimv2' -rpc-auth-level privacy</code></pre>
+
+<p>This opens a WQL query shell through DCOM/WMI. A user can have delegated permission to query a namespace without being permitted to create processes. The second combination chooses a namespace and requests RPC packet privacy, which protects RPC message contents; some namespaces require that authentication level.</p>
+
+<pre><code>SELECT Caption, Version FROM Win32_OperatingSystem
+SELECT Name, State, StartName FROM Win32_Service
+describe Win32_Process</code></pre>
+
+<p>These are commands entered inside the WMI query shell. The first asks the OS class for selected properties. The second lists service state and configured service accounts. <code>describe</code> shows a class definition rather than executing a process. <code>-file</code> can read query-shell commands from a local file. The returned data helps explain the host, but querying an administrator-named service does not mean you can control it.</p>
+
+<h2 id="tool-services">services — inspect or manage the Service Control Manager directly</h2>
+
+<pre><code>impacket-services 'lab.example/labadmin@srv01.lab.example' list
+impacket-services 'lab.example/labadmin@srv01.lab.example' config -name Spooler
+impacket-services 'lab.example/labadmin@srv01.lab.example' status -name Spooler</code></pre>
+
+<p>This is a direct SCMR client over SMB/RPC. <code>list</code> enumerates services, <code>config</code> reads the selected service's configuration, and <code>status</code> reads its current state. Configuration can reveal an executable path, start mode, and service account. Service names are identifiers, not necessarily the friendly names shown in the Windows UI.</p>
+
+<p>The other subcommands are <code>start</code>, <code>stop</code>, <code>create</code>, <code>change</code>, and <code>delete</code>. They request different access rights. <code>create</code> takes <code>-name</code>, <code>-display</code>, and <code>-path</code>; it registers a service but does not upload the executable to that path. A normal service executable must implement the Windows service protocol. <code>change</code> can modify a service's path or account only when the service ACL permits it. This helps explain why reading a service configuration is not proof of an exploitable service misconfiguration.</p>
+
+<h2 id="tool-tstool">tstool — work with Remote Desktop Services sessions</h2>
+
+<pre><code>impacket-tstool 'lab.example/labadmin@srv01.lab.example' qwinsta -v
+impacket-tstool 'lab.example/labadmin@srv01.lab.example' tasklist</code></pre>
+
+<p>Terminal Services has RPC interfaces for session and process management. <code>qwinsta</code> enumerates sessions; <code>-v</code> asks for more detail. <code>tasklist</code> enumerates processes. This tool uses RPC over SMB named pipes, so it is not a graphical RDP client and does not simply connect to port 3389.</p>
+
+<p>Other actions include <code>taskkill</code>, <code>tscon</code>, <code>tsdiscon</code>, <code>logoff</code>, <code>msg</code>, <code>shadow</code>, and <code>shutdown</code>. Session permissions and Windows policy govern them. A session ID identifies a session; it is not an authorization token. <code>tscon</code> attaches sessions, <code>tsdiscon</code> disconnects without the same meaning as logoff, and <code>shadow</code> requests a remote-assistance invitation; view/control and consent depend on its options and server policy. Shutdown affects the remote machine and all its sessions. These actions are state changes, unlike merely listing sessions.</p>
+
+<h2 id="directory">Directory and RPC enumeration: learn what the identity can see</h2>
+
+<h2 id="tool-getadusers">GetADUsers — read user objects through LDAP</h2>
+
+<pre><code>impacket-GetADUsers 'lab.example/alice' -dc-ip 192.0.2.10 -all
+impacket-GetADUsers 'lab.example/alice' -dc-ip 192.0.2.10 -user bob -all</code></pre>
+
+<p>Active Directory is a directory of objects and attributes. This tool authenticates to LDAP and requests user data such as account names, email addresses, and logon/password timestamps. Ordinary domain users can often read substantial directory information because applications need it to find people and services. This is not equivalent to reading their passwords.</p>
+
+<p><code>-all</code> includes users the default filter omits, including disabled accounts or accounts without an email address. The second example narrows the request to <code>bob</code> while retaining that broader inclusion behavior. Names and timestamps give context for further assessment; they do not prove that an account is active, privileged, or currently logged in. Some logon-related attributes are not an exact real-time record.</p>
+
+<h2 id="tool-getadcomputers">GetADComputers — read computer objects and optionally resolve their addresses</h2>
+
+<pre><code>impacket-GetADComputers 'lab.example/alice' -dc-ip 192.0.2.10
+impacket-GetADComputers 'lab.example/alice' -dc-ip 192.0.2.10 -resolveIP</code></pre>
+
+<p>A computer joined to AD has an account, usually ending in <code>$</code>, and directory attributes describing it. The first command queries those objects. The second also tries DNS resolution using the DC, connecting directory names to addresses. LDAP answers the object question; DNS answers the address question.</p>
+
+<p>An object can remain after a machine is retired, and a DNS record can be stale. Neither means that a host is currently reachable or that its reported operating-system attributes are current. The unusually named <code>-user</code> filter in this script selects a specific account; check its help instead of inventing a <code>-computer</code> flag from another tool.</p>
+
+<h2 id="tool-dumpntlminfo">DumpNTLMInfo — inspect the identity information offered during NTLM negotiation</h2>
+
+<pre><code>impacket-DumpNTLMInfo srv01.lab.example
+impacket-DumpNTLMInfo srv01.lab.example -protocol RPC -port 135</code></pre>
+
+<p>An NTLM server challenge can include target information such as domain names, computer names, and version-related fields. This tool starts the negotiation and parses the response. The default example uses SMB. The second chooses RPC on TCP 135. It does not need to finish a valid user login just to inspect the challenge metadata that a server chooses to disclose.</p>
+
+<p>For a pentester, this is useful when an IP is known but the AD naming context is not. Treat returned names as server-provided metadata. A successful negotiation is not successful authentication, an exposed NTLM challenge is not the password hash, and a version field alone is not proof of a vulnerability.</p>
+
+<h2 id="tool-machine_role">machine_role — ask a host about its role and primary domain</h2>
+
+<pre><code>impacket-machine_role 'lab.example/alice@srv01.lab.example'
+impacket-machine_role 'lab.example/alice@dc01.lab.example'</code></pre>
+
+<p>This uses the Directory Services setup RPC interface over an SMB named pipe to retrieve primary-domain information. It can distinguish roles such as member workstation, member server, or domain controller and return domain-related names. The two commands ask different hosts; they do not change either host's role.</p>
+
+<p>This helps interpret later results: the local account database of a member server is different from the domain account database on a DC. Access depends on the server's RPC policy. A failure to query the role does not turn the target into an unknown operating system; it may simply mean the interface is blocked or restricted.</p>
+
+<h2 id="tool-getarch">getArch — infer architecture through an RPC transfer-syntax negotiation</h2>
+
+<pre><code>impacket-getArch -target srv01.lab.example
+impacket-getArch -targets lab-hosts.txt -timeout 3</code></pre>
+
+<p>The script probes the RPC endpoint mapper and tests support for the NDR64 transfer syntax. Acceptance is an indication of a 64-bit RPC environment. It does not execute a binary on the host or read a CPU registry key. The first command probes one host; the second reads one hostname per line and adjusts the connection timeout.</p>
+
+<p>This is a protocol-based inference, not a complete architecture inventory. A filtered port, unexpected RPC implementation, or negotiation error is not reliable proof of a 32-bit OS. Interpret the response in that context before choosing an architecture-specific lab payload.</p>
+
+<h2 id="tool-lookupsid">lookupsid — translate candidate SIDs into account names</h2>
+
+<pre><code>impacket-lookupsid 'lab.example/alice@dc01.lab.example' 2000
+impacket-lookupsid 'lab.example/alice@srv01.lab.example' -domain-sids 2000</code></pre>
+
+<p>A Windows SID contains an authority/domain portion and a final relative identifier, or RID. LookupSID uses LSA RPC over SMB to learn the relevant SID namespace and ask which names correspond to candidate RIDs. This is account enumeration through SID translation, not password guessing.</p>
+
+<p>The positional <code>2000</code> limits the RID search range, which also limits coverage and traffic. <code>-domain-sids</code> asks for domain SID handling instead of only the default local context and can result in lookups forwarded toward a DC. Anonymous or low-privilege translation is policy-dependent. Missing names beyond the selected range are not evidence that no other accounts exist.</p>
+
+<h2 id="tool-samrdump">samrdump — enumerate account metadata over SAMR</h2>
+
+<pre><code>impacket-samrdump 'lab.example/alice@dc01.lab.example'
+impacket-samrdump 'lab.example/alice@srv01.lab.example' -csv</code></pre>
+
+<p>SAMR is the remote account-management interface. This tool opens it over SMB and enumerates users and available account details. On a DC the relevant database can be the domain; on a member machine it can be local accounts. <code>-csv</code> changes output formatting for later analysis, not the remote access rights.</p>
+
+<p>The word “dump” here means account metadata, not automatic NT-hash extraction. Modern remote SAM restrictions can deny the request to an otherwise valid user. Keep that distinction when reporting: listing an account and obtaining its reusable secret are very different outcomes.</p>
+
+<h2 id="tool-rpcdump">rpcdump — enumerate registered RPC endpoints</h2>
+
+<pre><code>impacket-rpcdump srv01.lab.example
+impacket-rpcdump 'lab.example/alice@srv01.lab.example' -port 445</code></pre>
+
+<p>The endpoint mapper associates RPC interface identifiers with network endpoints. RPCDump asks it what is registered and prints UUIDs, versions, and bindings. The default example uses TCP 135; the second selects an SMB transport on 445. Other supported transports depend on the available server endpoints.</p>
+
+<p>An interface being registered tells us where to direct an RPC bind. It does not prove that every operation on that interface is callable without authorization. This distinction is useful when a scanner finds an interface associated with a known technique: interface presence, usable method permissions, and vulnerable behavior are separate checks.</p>
+
+<h2 id="tool-rpcmap">rpcmap — test RPC interfaces on a specific binding</h2>
+
+<pre><code>impacket-rpcmap 'ncacn_ip_tcp:192.0.2.20[135]'
+impacket-rpcmap 'ncacn_np:192.0.2.20[\pipe\srvsvc]' -auth-transport 'lab.example/alice'</code></pre>
+
+<p>A string binding describes how to reach RPC: <code>ncacn_ip_tcp</code> means TCP, while <code>ncacn_np</code> means a named pipe carried by SMB. RPCMap looks for interfaces that accept a bind at that location. The second command authenticates the SMB transport. RPC-level authentication can be configured separately with <code>-auth-rpc</code>; transport authentication and interface authentication need not be the same layer.</p>
+
+<p><code>-uuid</code> narrows the interface under test. <code>-brute-uuids</code> tries candidate interfaces, <code>-brute-versions</code> tests interface versions, and <code>-brute-opnums</code> sends operation probes. The last mode actually calls operation numbers and should not be described as a passive listing. <code>-opnum-max</code> and <code>-version-max</code> bound those probes. An accepted bind does not guarantee a useful, authorized operation.</p>
+
+<h2 id="tool-net">net — query or change accounts and group membership through SAMR</h2>
+
+<pre><code>impacket-net 'lab.example/alice@dc01.lab.example' user
+impacket-net 'lab.example/alice@dc01.lab.example' user -name bob
+impacket-net 'lab.example/labadmin@srv01.lab.example' localgroup -name Administrators</code></pre>
+
+<p>This is Impacket's SAMR implementation of familiar account-management tasks. <code>user</code> enumerates users; adding <code>-name</code> requests one account. <code>localgroup</code> selects an alias/local-group context, while <code>group</code> selects a domain-group context. The target host and the selected domain inside its account database determine what the names refer to.</p>
+
+<p>The <code>computer</code> action works with computer accounts. Creation/removal and enable/disable options change objects; group <code>-join</code> and <code>-unjoin</code> change membership. Enumerating the Administrators group does not imply permission to join it. For each change, the SAMR server checks the rights on that account or group. An apparent “add user” command is still ordinary authenticated account management unless a specific authorization weakness has been demonstrated.</p>
+
+<h2 id="tool-netview">netview — query visible sessions and logged-on users</h2>
+
+<pre><code>impacket-netview 'lab.example/alice' -target srv01.lab.example -noloop
+impacket-netview 'lab.example/alice' -targets lab-hosts.txt -user bob -noloop</code></pre>
+
+<p>NetView combines SMB/RPC queries, including server session and workstation user information, to describe users visible on selected machines. It can enumerate domain targets when no target list is supplied. The examples deliberately select a host or file of hosts. <code>-noloop</code> stops after one probing pass; otherwise this tool can continue polling.</p>
+
+<p><code>-user bob</code> filters what is displayed; it does not log in as Bob or retrieve his credentials. <code>-delay</code> and <code>-max-connections</code> control repeated probing behavior. Permission restrictions can hide session data, and an SMB session is not necessarily an interactive desktop logon. These results are observations at a particular time, not proof that reusable credentials are in memory.</p>
+
+<h2 id="tool-checkldapstatus">CheckLDAPStatus — infer LDAP signing and LDAPS channel-binding requirements</h2>
+
+<pre><code>python3 /usr/share/doc/python3-impacket/examples/CheckLDAPStatus.py -domain lab.example -dc-ip 192.0.2.10
+python3 /usr/share/doc/python3-impacket/examples/CheckLDAPStatus.py -domain lab.example -dc-ip 192.0.2.10 -timeout 5 -debug</code></pre>
+
+<p>This script first uses the supplied DNS/DC address to discover domain controllers through SRV records. It then probes the discovered DCs. <code>-dc-ip</code> therefore does not mean “only test this one host.” The timeout controls its DNS discovery timeout, and debug output helps explain the LDAP responses.</p>
+
+<p>LDAP signing binds integrity protection to authenticated messages. Channel binding ties authentication to the TLS channel. The script infers enforcement from responses to deliberately incomplete or invalid authentication attempts; it does not read the effective policy directly. An NTLM-disabled server, a TLS problem, or an unexpected response can make that inference incomplete. A permissive-looking result is a starting point for relay analysis, not proof of a working relay path.</p>
+
+<h2 id="kerberos">Kerberos: requesting tickets, inspecting them, and understanding delegation</h2>
+
+<p>Remember the normal process: a client authenticates to the KDC and receives a TGT plus session-key material. It uses that TGT to ask for a ticket to a particular service. The service ticket contains a part encrypted with the service account's key. Possessing a ticket file, decrypting its encrypted contents, and having the service authorize access are different things. These tools operate at different points in that process.</p>
+
+<h2 id="tool-gettgt">getTGT — request a ticket-granting ticket using an account secret</h2>
+
+<pre><code>impacket-getTGT 'lab.example/alice' -dc-ip 192.0.2.10
+impacket-getTGT 'lab.example/alice' -hashes ':&lt;ALICE_NT_HASH&gt;' -dc-ip 192.0.2.10
+impacket-getTGT 'lab.example/alice' -aesKey '&lt;ALICE_AES_KEY&gt;' -dc-ip 192.0.2.10</code></pre>
+
+<p>These are three alternatives for authenticating as the same account: password, NT hash for a compatible RC4 path, or AES key. The tool builds an AS request, handles the supported pre-authentication exchange, and saves the returned credentials to a ccache file. This is an online conversation with the KDC, not local ticket forgery.</p>
+
+<p>A normal successful run for Alice saves <code>alice.ccache</code>. Point <code>KRB5CCNAME</code> at that file before using a compatible tool with <code>-k -no-pass</code>. The cache contains more than the opaque TGT: it also carries the session key needed to create authenticators. Copying only ticket ciphertext is not the same as having a usable cache.</p>
+
+<p><code>-principalType</code> changes how the client principal is encoded, which can matter for enterprise names. <code>-service</code> requests a selected service in the AS exchange; it is a specialized mode, not a reason to treat getTGT and getST as interchangeable. A correct account secret can still fail because of account restrictions, an unsupported encryption type, time skew, or the wrong realm.</p>
+
+<h2 id="tool-getst">getST — request a service ticket, including supported delegation flows</h2>
+
+<pre><code>export KRB5CCNAME="$PWD/alice.ccache"
+impacket-getST -k -no-pass 'lab.example/alice' -spn cifs/srv01.lab.example -dc-ip 192.0.2.10
+impacket-getST 'lab.example/websvc' -impersonate bob -spn cifs/srv01.lab.example -dc-ip 192.0.2.10</code></pre>
+
+<p>The first request uses Alice's TGT to ask for a ticket whose service principal is <code>cifs/srv01.lab.example</code>. CIFS is the service name normally used for SMB. A ticket for an HTTP SPN is not automatically an SMB ticket. The tool saves a ccache and prints its filename; use that actual filename when changing <code>KRB5CCNAME</code>, because the naming differs between modes and versions.</p>
+
+<p>The second request means something different. <code>websvc</code> authenticates, while <code>-impersonate bob</code> asks for an S4U flow on Bob's behalf. S4U2Self requests a ticket to the service itself naming Bob; S4U2Proxy uses an appropriate evidence ticket to ask for a downstream service ticket. The KDC checks the delegation configuration and ticket properties. Knowing a random user's password does not grant permission to impersonate any account to any SPN.</p>
+
+<p><code>-self</code> stops at S4U2Self. <code>-additional-ticket</code> supplies an existing evidence ticket for the supported S4U2Proxy flow. <code>-u2u</code> requests user-to-user Kerberos, in which the ticket can be encrypted using a session key associated with another TGT. <code>-altservice</code> rewrites the service name in the produced credential; successful use still depends on the accepting service, its key, and validation. None of those switches creates missing delegation rights.</p>
+
+<p><code>-renew</code> asks the KDC to renew eligible credentials, subject to their renewal window. <code>-force-forwardable</code> relates to a historical ticket-modification technique and requires appropriate key material and compatible server behavior; it is not a universal bypass on patched DCs. <code>-dmsa</code> supports delegated managed service account handling. That mode depends on the relevant account configuration and DC behavior, which we return to in the BadSuccessor section.</p>
+
+<h2 id="tool-getnpusers">GetNPUsers — identify accounts without pre-authentication and request AS-REP material</h2>
+
+<pre><code>impacket-GetNPUsers 'lab.example/alice' -dc-ip 192.0.2.10
+impacket-GetNPUsers 'lab.example/alice' -dc-ip 192.0.2.10 -request -format hashcat -outputfile asrep.txt
+impacket-GetNPUsers 'lab.example/' -dc-ip 192.0.2.10 -usersfile lab-users.txt -no-pass -format hashcat -outputfile asrep.txt</code></pre>
+
+<p>Normally, pre-authentication makes the client prove knowledge of its secret before the KDC issues the normal AS reply. If an account has pre-authentication disabled, the KDC can return an AS-REP without that proof. Part of the reply is encrypted with a key derived from the account's password. A tester can take that ciphertext offline and check password guesses against it.</p>
+
+<p>The first command uses Alice's credentials to discover matching accounts through LDAP. The second adds <code>-request</code> to obtain the encrypted reply material and writes it in a format understood by an offline cracking tool. The third already has candidate usernames in a file, so it can make AS requests without first authenticating to LDAP. The users-file path performs those requests; it does not need a separate LDAP enumeration phase.</p>
+
+<p>This is AS-REP roasting, not Kerberoasting. The output commonly called a “hash” is a cracking representation of encrypted Kerberos material, not the target's reusable NT hash. Getting a response is not the same as recovering a password, and an empty result can mean pre-authentication is required, usernames are wrong, or the request failed. A strong password can remain impractical to recover even when the account setting is undesirable.</p>
+
+<h2 id="tool-getuserspns">GetUserSPNs — find service accounts and request roastable service tickets</h2>
+
+<pre><code>impacket-GetUserSPNs 'lab.example/alice' -dc-ip 192.0.2.10
+impacket-GetUserSPNs 'lab.example/alice' -dc-ip 192.0.2.10 -request-user sqlsvc -outputfile sqlsvc-tgs.txt
+impacket-GetUserSPNs 'lab.example/alice' -dc-ip 192.0.2.10 -request -save</code></pre>
+
+<p>An SPN maps a service name to an AD account. The first command queries LDAP for the relevant user accounts and SPNs. A normal authenticated domain user can often request a service ticket for a registered SPN even when the service will later deny that user access. Issuing the ticket and authorizing the service operation are separate decisions.</p>
+
+<p>The ticket's service-encrypted part is protected by the service account's key. That gives an offline password-guessing target when the service account has a guessable password. The second example requests material for one selected account and writes the cracking representation. <code>-request</code> requests tickets for the enumerated targets; <code>-save</code> additionally saves requested credentials as caches. A saved credential cache and a hashcat/JtR text file serve different purposes.</p>
+
+<p><code>-target-domain</code> changes the domain being queried for supported cross-trust scenarios. <code>-usersfile</code> supplies a target account list. <code>-machine-only</code> and <code>-request-machine</code> select computer accounts in this snapshot; ordinary machine-generated passwords usually make password guessing much less practical than against human-chosen service passwords. Merely seeing an SPN is not proof of a weak password.</p>
+
+<p><code>-no-preauth</code> selects a specialized AS-exchange route using an account without pre-authentication; do not confuse it with <code>-no-pass</code>. The <code>-stealth</code> option changes the LDAP filter, not whether requests are logged, and can cause a much broader query. As pentesters, we should explain what the request actually does rather than treating an option's name as a promise.</p>
+
+<h2 id="tool-finddelegation">findDelegation — read configured delegation relationships</h2>
+
+<pre><code>impacket-findDelegation 'lab.example/alice' -dc-ip 192.0.2.10
+impacket-findDelegation 'lab.example/alice' -dc-ip 192.0.2.10 -user websvc -disabled</code></pre>
+
+<p>Delegation lets one service act on behalf of a user when contacting another service. This tool queries LDAP for relevant account flags and attributes, including unconstrained delegation, constrained service lists, and resource-based constrained delegation information. The second command focuses on one account and includes disabled accounts that would otherwise be filtered out.</p>
+
+<p>Unconstrained delegation, traditional constrained delegation, and RBCD place trust in different locations. A listed relationship does not mean the current tester controls the delegating account or can modify the target object. Check the account secret, the specific allowed service, sensitive-account restrictions, and whether the target is enabled. The tool enumerates configuration; it does not automatically obtain the downstream ticket.</p>
+
+<h2 id="tool-getpac">getPac — request and decode authorization information using S4U2Self and U2U</h2>
+
+<pre><code>impacket-getPac 'lab.example/alice' -targetUser bob
+impacket-getPac 'lab.example/alice' -targetUser bob -hashes ':&lt;ALICE_NT_HASH&gt;'</code></pre>
+
+<p>A PAC is a collection of authorization data carried in Windows Kerberos tickets, including domain and group information. This example combines S4U2Self with user-to-user Kerberos so that it can decrypt the returned ticket using session-key material it possesses and inspect the PAC. The second form changes the secret used for Alice's authentication; Bob remains the subject whose PAC is requested.</p>
+
+<p>Reading Bob's group information is not equivalent to receiving permission to act as Bob at arbitrary services. The KDC decides whether the request is valid. This script has a smaller option set than getST: it does not expose <code>-dc-ip</code> or the common <code>-k -no-pass</code> combination in the reviewed snapshot, so domain resolution must work as expected. Do not manufacture unsupported flags from a similar-looking tool.</p>
+
+<h2 id="tool-describeticket">describeTicket — inspect a saved ticket and optionally decrypt its encrypted part</h2>
+
+<pre><code>impacket-describeTicket alice.ccache
+impacket-describeTicket service.ccache --aes '&lt;SERVICE_ACCOUNT_AES_KEY&gt;'
+impacket-describeTicket service.ccache --rc4 '&lt;SERVICE_ACCOUNT_NT_HASH&gt;'</code></pre>
+
+<p>These commands work on local files. Without a service key, the tool can describe the cache and ticket metadata that is available. Supplying the matching AES or RC4 service key lets it attempt to decrypt the ticket's encrypted part and parse the PAC. The key must match both the account behind the ticket's service and the ticket's encryption type.</p>
+
+<p>For a service ticket that usually means the service account's key; for an ordinary TGT it means the appropriate krbtgt key. Alice's password is not a universal key for every ticket she receives. Password-based derivation options need the proper account, realm, and salt. <code>--asrep-key</code> has a different purpose: decrypting PAC credential information when that structure is present. Parsing a file does not establish that a live service would accept it.</p>
+
+<h2 id="tool-ticketconverter">ticketConverter — convert between Kerberos credential containers</h2>
+
+<pre><code>impacket-ticketConverter alice.kirbi alice.ccache
+impacket-ticketConverter alice.ccache alice.kirbi</code></pre>
+
+<p>A Windows-style KRB-CRED file, often called <code>.kirbi</code>, and a ccache file package credentials differently. This utility converts the container so another client can use the same underlying ticket and session key. The two positional arguments are input and output; the tool detects the supported input format.</p>
+
+<p>Conversion is local. It does not renew a ticket, change its identity, add group membership, recover a missing password, or make an expired ticket valid. Before using the output, inspect the principal, service, validity period, and encryption context. A different filename extension does not change what the KDC issued.</p>
+
+<h2 id="tool-ticketer">ticketer — construct tickets using key material already under your control</h2>
+
+<pre><code>impacket-ticketer -domain lab.example -domain-sid S-1-5-21-111111111-222222222-333333333 -aesKey '&lt;LAB_KRBTGT_AES_KEY&gt;' -user-id 1105 -groups 513 -duration 1 alice
+impacket-ticketer -domain lab.example -domain-sid S-1-5-21-111111111-222222222-333333333 -spn cifs/srv01.lab.example -aesKey '&lt;LAB_SERVICE_AES_KEY&gt;' -user-id 1105 -groups 513 -duration 1 alice</code></pre>
+
+<p>These examples assume the signing/encryption keys and identifiers were already obtained in an authorized lab. Without <code>-spn</code>, Ticketer constructs a TGT, commonly called a golden ticket, using the relevant krbtgt key. With <code>-spn</code>, it constructs a service ticket, commonly called a silver ticket, using the service account's key. It does not discover those keys for us.</p>
+
+<p><code>-domain-sid</code> provides the domain SID; <code>-user-id</code> provides the account RID; <code>-groups</code> supplies group RIDs in the PAC; and <code>-duration</code> sets the requested lifetime in hours. The examples deliberately specify these values instead of silently accepting the tool's privileged default group list and long lifetime. Inventing a name or group value does not guarantee acceptance by a hardened service or KDC.</p>
+
+<p><code>-request</code>, together with authentication options such as <code>-user</code> and <code>-password</code>, requests an initial ticket and uses it as a template. <code>-impersonate</code> supports the tool's sapphire-ticket flow, using S4U2Self/U2U-derived PAC material. <code>-extra-sid</code> changes extra SID claims. Those modes still depend on the keys, protocol behavior, account relationships, and PAC validation in the environment. Ticket creation success is only evidence that a local file was created; the meaningful test is the narrowly authorized service operation it can actually perform.</p>
+
+<h2 id="tool-keylistattack">keylistattack — use an RODC key in a Kerberos key-list request</h2>
+
+<pre><code>impacket-keylistattack LIST -domain lab.example -kdc dc01.lab.example -rodcNo 123 -rodcKey '&lt;LAB_RODC_KRBTGT_AES_KEY&gt;' -t labuser</code></pre>
+
+<p>A read-only domain controller has its own krbtgt-derived identity and password-replication rules. This technique uses the relevant RODC krbtgt key to construct credentials for a KERB-KEY-LIST request to a writable KDC. The critical prerequisite is that key and its correct RODC identifier. An ordinary domain user password alone is insufficient.</p>
+
+<p><code>LIST</code> means the target account names are supplied rather than discovered through an SMB account-enumeration phase. <code>-t</code> selects one user, <code>-tf</code> supplies a file, <code>-domain</code> supplies the realm, and <code>-kdc</code> supplies the KDC. <code>-rodcNo</code> and <code>-rodcKey</code> must correspond to the same RODC context.</p>
+
+<p>The KDC's replication restrictions and server behavior determine which accounts can return useful key material. The credential-target form can enumerate accounts first; <code>-full</code> broadens attempts and can produce many rejected requests. This is different from password guessing and from ordinary LDAP password reads. A result reflects the impact of compromised RODC key material, not a general unauthenticated domain-dump feature.</p>
+
+<h2 id="credentials">Credential material: identify where the secret is stored</h2>
+
+<h2 id="tool-secretsdump">secretsdump — read protected local stores or request directory replication</h2>
+
+<pre><code>impacket-secretsdump 'lab.example/labadmin@srv01.lab.example' -outputfile srv01-secrets
+impacket-secretsdump 'lab.example/auditor@dc01.lab.example' -just-dc-user labuser -just-dc-ntlm
+impacket-secretsdump -sam SAM.copy -system SYSTEM.copy -security SECURITY.copy LOCAL</code></pre>
+
+<p>These commands select three distinct situations. The first authenticates to a member server and attempts to obtain local SAM information and LSA secrets/cached logon data using privileged remote access. The second requests selected directory secret material from a DC through DRSUAPI replication; <code>auditor</code> must have the necessary replication permissions. The third parses already acquired local registry-hive copies and makes no remote connection.</p>
+
+<h3>Why does SYSTEM matter when reading SAM?</h3>
+
+<p>The SAM hive stores local account password material in protected form. The SYSTEM hive contains information used to derive the boot key needed for the decryption process. SECURITY has other protected LSA data and cached domain-logon material. These files play different roles: simply holding SAM bytes does not mean those bytes contain printable passwords. For offline AD extraction, <code>-ntds</code> selects an acquired NTDS database and the matching decryption context is still needed.</p>
+
+<h3>Why can DCSync work without a shell on the DC?</h3>
+
+<p>Domain controllers need to replicate directory changes. DRSUAPI exposes that replication protocol, including operations such as <code>DRSGetNCChanges</code>. A caller with the required directory replication rights can request protected attributes through that interface. This path does not need to upload PsExec's service or read <code>NTDS.dit</code> as an SMB file. Replication rights are the authority being exercised. Local administrator rights on a member server do not provide them.</p>
+
+<p><code>-just-dc-user</code> narrows replication to one user in the supported DRS path. <code>-just-dc</code> selects directory credentials instead of the local SAM/SECURITY phase, and <code>-just-dc-ntlm</code> limits directory output to NTLM material. <code>-ldapfilter</code> narrows users through an LDAP filter in the supported mode. Filters restrict requested output; they do not supply missing replication permissions.</p>
+
+<p>The default remote local-store path can start or temporarily reconfigure RemoteRegistry, save hive data, and read files back. <code>-use-vss</code> instead selects an NTDS snapshot/acquisition path that requires privileged remote execution and creates artifacts. <code>-exec-method</code> controls that execution method where applicable. The <code>-use-remoteSSWMI</code> family creates and reads a remote shadow copy through WMI; it is also an active acquisition method, not just a query.</p>
+
+<p><code>-use-keylist</code> selects the specialized RODC key-list path with the corresponding RODC material. <code>-history</code> requests older stored secrets, <code>-outputfile</code> chooses an output basename, and <code>-resumefile</code> supports the DRS replication workflow. These modes have different prerequisites; combining flags from incompatible paths does not make them interchangeable.</p>
+
+<p>Keep the output types separate. Local/domain NT hashes may be reusable in compatible authentication protocols. Cached domain-logon hashes are generally offline-verification targets and cannot simply be passed to <code>-hashes</code>. Kerberos AES keys and LSA secrets have their own uses. The tool does not read every logged-on user's LSASS memory just because its name contains “secrets.”</p>
+
+<h2 id="tool-regsecrets">regsecrets — read SAM and LSA data through privileged registry operations</h2>
+
+<pre><code>python3 /usr/share/doc/python3-impacket/examples/regsecrets.py 'lab.example/labadmin@srv01.lab.example' -outputfile srv01-registry
+python3 /usr/share/doc/python3-impacket/examples/regsecrets.py 'lab.example/labadmin@srv01.lab.example' -nosam -nocache</code></pre>
+
+<p>This separate example uses the Remote Registry path and registry backup/restore access options to retrieve protected values. It focuses on SAM, cached logon data, and LSA secrets rather than providing the DRS domain-replication interface. Its implementation reads the needed registry data directly instead of treating every operation as a full hive-file export.</p>
+
+<p>The first example selects an output basename. The second skips SAM and cached-logon processing, leaving the LSA-secret path; <code>-nolsa</code> disables that path as well. <code>-throttle</code> adds a delay between operations, and <code>-history</code> requests supported older values. RemoteRegistry can still need to be enabled or started, and administrative/backup-related privileges still matter. Fewer exported files do not make the access unaudited or remove the credential sensitivity of the result.</p>
+
+<h2 id="tool-get-gpppassword">Get-GPPPassword — find and decrypt old Group Policy Preferences cpassword values</h2>
+
+<pre><code>impacket-Get-GPPPassword 'lab.example/alice@dc01.lab.example' -share SYSVOL
+impacket-Get-GPPPassword LOCAL -xmlfile ./Groups.xml</code></pre>
+
+<p>Group Policy Preferences historically stored some configured passwords in XML files using an encryption key that became publicly known. Since domain clients must read policy files, those XML files can be readable in SYSVOL. When a leftover <code>cpassword</code> value is present, the tool can decrypt it locally; it does not brute-force the password.</p>
+
+<p>The first command searches the selected SMB share. <code>-base-dir</code> can narrow the search beneath a known directory. The second parses an already acquired XML file without connecting to a DC. Modern policy editing no longer provides the same old password-storage mechanism, but obsolete files can remain. A recovered password can also be stale: reading a historical configured secret does not prove it still authenticates.</p>
+
+<h2 id="tool-getlapspassword">GetLAPSPassword — read local administrator passwords delegated through AD</h2>
+
+<pre><code>impacket-GetLAPSPassword 'lab.example/helpdesk' -dc-ip 192.0.2.10 -computer SRV01
+impacket-GetLAPSPassword 'lab.example/helpdesk' -dc-ip 192.0.2.10 -computer SRV01 -ldaps -outputfile srv01-laps.txt</code></pre>
+
+<p>LAPS manages per-machine local administrator passwords and stores related data in Active Directory with controlled access. This tool queries the supported legacy and Windows LAPS attributes. The first example selects one computer. The second uses LDAPS and writes the result to a file. <code>-computer</code> is a directory account filter, not a request to log in to the local administrator account.</p>
+
+<p>For encrypted Windows LAPS data, the implementation can use MS-GKDI to obtain the authorized key material needed for DPAPI-NG decryption. Being able to read an encrypted attribute is not necessarily enough to decrypt it. LDAP access rules, the configured authorized decryptors, and RPC connectivity can all matter. LDAPS protects the transport; it does not grant permission to read another machine's password.</p>
+
+<p>The pentesting question is whether the current identity can retrieve passwords beyond its intended administration scope. A password returned to an intentionally authorized helpdesk group is not automatically a vulnerability. Check the managed account name, machine, expiration information, and access delegation before describing the impact.</p>
+
+<h2 id="tool-dpapi">dpapi — decrypt Windows-protected data when the corresponding key context is available</h2>
+
+<pre><code>impacket-dpapi masterkey -file ./masterkey.bin -sid S-1-5-21-111111111-222222222-333333333-1105
+impacket-dpapi credential -file ./credential.bin -key '&lt;DECRYPTED_MASTERKEY_HEX&gt;'
+impacket-dpapi unprotect -file ./blob.bin -key '&lt;DECRYPTED_MASTERKEY_HEX&gt;' -entropy 'lab-application-context'</code></pre>
+
+<p>DPAPI lets Windows applications protect data using a user or machine context. Applications usually encrypt their data with a master key, while that master key is itself protected using user/system/domain recovery mechanisms. This is why “I copied the browser or credential file” is only the beginning of the decryption problem.</p>
+
+<p>The first example parses a master-key file and, with the SID supplied, can prompt for the user password to try the relevant derivation. <code>-password</code>, <code>-key</code>, <code>-pvk</code>, or matching SYSTEM/SECURITY material select other supported ways to unlock a master key. The second example supplies a decrypted master key to a credential-file parser. The third uses the same idea for a DPAPI blob whose application also supplied extra entropy. Wrong entropy can cause decryption failure even with the right master key.</p>
+
+<p><code>vault</code> works with vault policy/credential files; <code>credhist</code> deals with protected credential history. The separate <code>backupkeys</code> action connects to a domain controller for domain DPAPI backup-key operations, with <code>--export</code> writing key material. It requires the appropriate high-privilege access. That online operation is different from parsing a local file, and none of these actions bypasses missing cryptographic inputs by itself.</p>
+
+<h2 id="tool-mimikatz">mimikatz — connect to an existing Mimikatz RPC server</h2>
+
+<pre><code>impacket-mimikatz 'lab.example/labadmin@srv01.lab.example'
+impacket-mimikatz 'lab.example/labadmin@srv01.lab.example' -file ./lab-rpc-commands.txt</code></pre>
+
+<p>The name is easy to misunderstand. This script is a client for the remote Mimikatz RPC server interface. It expects a compatible server to be running already, locates/connects to that RPC interface, performs its protocol handshake, and forwards commands. It does not upload Mimikatz or turn every Windows machine into a Mimikatz server.</p>
+
+<p>The first form opens the mini shell; the second reads commands from a local file. The actual command capabilities and security context come from the server-side component and its privileges. If the interface is absent, an administrator password alone will not create it. Explain that prerequisite before presenting this as a credential-access option.</p>
+
+<h2 id="directory-changes">Changing directory objects: which permission authorizes the change?</h2>
+
+<h2 id="tool-addcomputer">addcomputer — create or manage a computer account through SAMR or LDAPS</h2>
+
+<pre><code>impacket-addcomputer 'lab.example/alice' -dc-ip 192.0.2.10 -method SAMR -computer-name 'LABPC01$' -computer-pass '&lt;NEW_LAB_MACHINE_PASSWORD&gt;'
+impacket-addcomputer 'lab.example/alice' -dc-ip 192.0.2.10 -method LDAPS -computer-name 'LABPC02$' -computer-pass '&lt;NEW_LAB_MACHINE_PASSWORD&gt;'</code></pre>
+
+<p>These examples create directory computer accounts, not virtual machines. A machine account has a secret just like a user account, but its account type and role differ. Whether Alice can create one depends on account-creation rights, applicable quota, container permissions, and domain policy. A commonly seen default quota is not a guarantee for the assessed domain.</p>
+
+<p><code>SAMR</code> uses account-management RPC over SMB, while <code>LDAPS</code> uses LDAP over TLS. The LDAPS method can select a container with <code>-computer-group</code> and a base distinguished name with <code>-baseDN</code>. The paths do not populate every attribute identically: for example, the SAMR-created account can need later DNS/SPN configuration. Creating the object is not a complete Windows domain join.</p>
+
+<p><code>-computer-name</code> selects the account; the quotes preserve the final dollar sign. <code>-computer-pass</code> establishes the new account's secret. <code>-no-add</code> instead changes the password of an existing computer account, and <code>-delete</code> removes one. Both are real changes that can break an existing machine's relationship with the domain. Owning a newly created machine account also does not by itself give that machine delegation rights to another server.</p>
+
+<h2 id="tool-changepasswd">changepasswd — distinguish a password change from an administrative reset</h2>
+
+<pre><code>impacket-changepasswd 'lab.example/labuser@dc01.lab.example' -protocol smb-samr -newpass '&lt;NEW_LAB_USER_PASSWORD&gt;'
+impacket-changepasswd 'lab.example/labuser@dc01.lab.example' -protocol kpasswd -newpass '&lt;NEW_LAB_USER_PASSWORD&gt;'</code></pre>
+
+<p>Both examples change the selected lab account's password using the supported protocol. A normal change generally proves knowledge of the current secret. An administrative reset instead relies on reset authority over the account. Those are distinct server operations, with different effects on policy checks and sometimes on access to previously protected user data.</p>
+
+<p><code>smb-samr</code> carries SAMR over SMB, <code>rpc-samr</code> uses the corresponding RPC transport, <code>kpasswd</code> uses the Kerberos password-change service, and <code>ldap</code> uses the directory password operation through the script's protected LDAP connection. <code>-reset</code> selects privileged reset behavior. <code>-altuser</code> with its password/hash option supplies an alternate identity for supported operations; it does not grant that identity reset rights.</p>
+
+<p><code>-newpass</code> is the replacement plaintext secret. <code>-newhashes</code> is a different input supported only by compatible methods; it should not be treated as an option that works with every protocol. The credentials in the target string identify the account whose password is being changed. This is an account mutation, not a credential-validity check.</p>
+
+<h2 id="tool-dacledit">dacledit — read and edit the permissions attached to an AD object</h2>
+
+<pre><code>impacket-dacledit 'lab.example/alice' -dc-ip 192.0.2.10 -action read -target labgroup
+impacket-dacledit 'lab.example/labadmin' -dc-ip 192.0.2.10 -action backup -target labgroup -file labgroup-before.json
+impacket-dacledit 'lab.example/labadmin' -dc-ip 192.0.2.10 -action write -target labgroup -principal alice -rights WriteMembers</code></pre>
+
+<p>A DACL contains access-control entries describing which principals are allowed or denied particular operations on an object. The first command reads the group's DACL. The second saves a copy. The third adds a permission allowing Alice to write membership on that lab group, provided the authenticating account can modify its DACL. It does not immediately add Alice to the group.</p>
+
+<p><code>-target</code> selects the object being protected; <code>-principal</code> selects who receives the entry; the identity argument authenticates the editor. These can be three different accounts/objects. SID and distinguished-name alternatives avoid ambiguous names. <code>-rights</code> chooses known rights, while <code>-rights-guid</code> and the custom-mask options address more specific cases.</p>
+
+<p><code>ResetPassword</code> grants a particular extended right, <code>WriteMembers</code> affects membership, and <code>DCSync</code> represents replication-related rights when applied in the correct directory context. They are not interchangeable forms of “admin.” <code>-inheritance</code> changes how an entry can flow to child objects; protected objects and inheritance rules can prevent the expected effect. <code>remove</code> removes matching entries, and <code>restore</code> writes a saved DACL back. Restoring an old backup can also overwrite legitimate intervening changes, so the before/after security descriptor matters.</p>
+
+<h2 id="tool-owneredit">owneredit — read or change the owner in an AD security descriptor</h2>
+
+<pre><code>impacket-owneredit 'lab.example/alice' -dc-ip 192.0.2.10 -action read -target labgroup
+impacket-owneredit 'lab.example/labadmin' -dc-ip 192.0.2.10 -action write -target labgroup -new-owner alice</code></pre>
+
+<p>The owner is a security-descriptor field separate from the DACL. The first example inspects it; the second requests an ownership change to Alice. The authenticating account must have the necessary owner-changing authority, and server rules can restrict which new owner can be assigned.</p>
+
+<p>Ownership is valuable because it commonly carries the ability to adjust the DACL, subject to owner-rights and other applicable controls. It is not the same as immediately becoming a group member or receiving all object rights. This explains a familiar assessment relationship: permission to take ownership can enable a later permission change. Document the exact object and resulting authority rather than claiming that every ownership change equals domain administration.</p>
+
+<h2 id="tool-rbcd">rbcd — inspect or edit the target resource's delegation permission</h2>
+
+<pre><code>impacket-rbcd 'lab.example/alice' -dc-ip 192.0.2.10 -delegate-to 'SRV01$' -action read
+impacket-rbcd 'lab.example/labadmin' -dc-ip 192.0.2.10 -delegate-to 'SRV01$' -delegate-from 'LABPC01$' -action write</code></pre>
+
+<p>Resource-based constrained delegation stores the relevant trust decision on the resource account, in <code>msDS-AllowedToActOnBehalfOfOtherIdentity</code>. The first command reads that attribute's security descriptor on SRV01. The second permits the selected delegating account in that descriptor, if the editor has the necessary write authority over the target object.</p>
+
+<p><code>-delegate-to</code> is the account representing the resource; <code>-delegate-from</code> is the account intended to act on another user's behalf. Reversing them changes the meaning. Writing the attribute does not itself authenticate as the delegating account or request an S4U service ticket. Those are later Kerberos operations with their own prerequisites and restrictions.</p>
+
+<p><code>-action remove</code> removes the selected delegation entry, whereas <code>flush</code> clears the attribute's delegation configuration more broadly. They are not equivalent cleanup operations. Preserve the original descriptor and account for existing entries. A user who can read this configuration may still have no ability to change it or use the delegating account.</p>
+
+<h2 id="tool-badsuccessor">badsuccessor — inspect dMSA relationships and understand the account-migration trust</h2>
+
+<pre><code>python3 /usr/share/doc/python3-impacket/examples/badsuccessor.py 'lab.example/alice' -dc-ip 192.0.2.10 -action search
+python3 /usr/share/doc/python3-impacket/examples/badsuccessor.py -h</code></pre>
+
+<p>Delegated managed service accounts, or dMSAs, support managed service identity and migration from predecessor accounts. This script deals with those objects and their migration-related attributes. The first command selects its search action; the second exposes the exact options in the installed snapshot. Search output is information about objects and permissions, not proof that the domain is vulnerable.</p>
+
+<p>The important theoretical relationship is that control over a dMSA and its migration linkage can be interpreted by a vulnerable KDC as authority associated with a predecessor identity. That interpretation depends on DC version, patch state, directory permissions, and the resulting account state. Having a writable OU by itself should not be reported as a demonstrated takeover on every current deployment.</p>
+
+<p>The script's other actions are <code>add</code>, <code>modify</code>, and <code>delete</code>. <code>-target-ou</code> selects a directory container, <code>-dmsa-name</code> selects the dMSA, <code>-target-account</code> selects its intended predecessor, and <code>-principals-allowed</code> identifies an account allowed to retrieve the managed password. These are directory changes, and creation, modification, password retrieval, and KDC ticket issuance each have their own permission checks. The <code>getST -dmsa</code> mode participates in the related Kerberos handling; the LDAP tool does not itself provide a remote shell.</p>
+
+<h2 id="files">SMB and registry access: read, write, and host files</h2>
+
+<h2 id="tool-smbclient">smbclient — interact with shares using the authenticated identity</h2>
+
+<pre><code>impacket-smbclient 'lab.example/alice@srv01.lab.example'
+impacket-smbclient -k -no-pass 'lab.example/alice@srv01.lab.example' -inputfile ./share-commands.txt -outputfile ./share-session.txt</code></pre>
+
+<p>This opens Impacket's SMB mini shell. It negotiates SMB, authenticates, and sends share/file operations. The second example obtains credentials through Kerberos, reads mini-shell commands from a local file, and logs the session. A batch file of commands can include writes as well as reads, so know what it contains.</p>
+
+<pre><code>shares
+use Public
+ls
+cd Reports
+get assessment.txt
+exit</code></pre>
+
+<p>These commands are entered inside the SMB shell. <code>shares</code> lists shares, <code>use</code> selects one, <code>ls</code> lists its current directory, and <code>get</code> downloads an allowed file. <code>put</code> uploads a file; <code>mkdir</code>, <code>rm</code>, and <code>rmdir</code> change remote storage. The mini shell manages files and is not an operating-system shell on the Windows host.</p>
+
+<p>Access is affected by both share permissions and underlying filesystem permissions. A successful share connection does not prove access to every directory, and a writable share does not prove administrative execution. <code>IPC$</code> is used for interprocess communication/named pipes rather than acting like an ordinary documents share.</p>
+
+<h2 id="tool-smbserver">smbserver — serve a local directory from Kali</h2>
+
+<pre><code>sudo impacket-smbserver LABSHARE ./lab-share -smb2support -ip 192.0.2.50 -username labtransfer -password '&lt;LAB_TRANSFER_PASSWORD&gt;'</code></pre>
+
+<p>This command starts a server on Kali. <code>LABSHARE</code> is the name a client sees, and <code>./lab-share</code> is the existing local directory backing it. <code>-ip</code> selects the listening address. The SMB2 option enables the tool's SMB2 support, which matters when clients reject SMB1. Binding the normal TCP 445 port can require elevated local privileges; that is why this example uses sudo.</p>
+
+<p>The username/password configure authentication to this temporary server; they are not automatically AD domain credentials. A Windows client can address it as <code>\\192.0.2.50\LABSHARE</code> if routing, firewall, SMB policy, and authentication permit. Client signing/encryption requirements and guest restrictions can prevent a connection even when the port is open. The implementation is a testing server, not a full Windows SMB server with every security feature.</p>
+
+<p><code>-port</code> changes the listener, but an ordinary Windows UNC path does not automatically select an arbitrary alternate SMB port. The server may also log NTLM challenge-response material from clients. Such material is not the client's raw NT hash. Hosting a share does not execute any file on a client merely because the client connects.</p>
+
+<h2 id="tool-karmasmb">karmaSMB — return selected local file content for SMB requests</h2>
+
+<pre><code>sudo impacket-karmaSMB ./lab-marker.txt -smb2support
+impacket-karmaSMB --help</code></pre>
+
+<p>KarmaSMB is a specialized SMB server example. Instead of serving a normal directory tree in the usual way, it returns the chosen local file's contents for incoming file requests. The first example therefore supplies a plain marker file. <code>-config</code> can map requested filename extensions to different local files; requests without a mapping use the default file.</p>
+
+<p>This helps study how a client consumes a file it believes came from an SMB path. The client still needs to be directed to this server by an independently established lab setup. Receiving bytes does not automatically execute them: execution depends on what the client application does with that file. The server binds a listening port and handles authentication traffic, so it is a server-side experiment rather than a read-only remote enumeration tool.</p>
+
+<h2 id="tool-reg">reg — query or modify the live remote registry</h2>
+
+<pre><code>impacket-reg 'lab.example/labadmin@srv01.lab.example' query -keyName 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -v ProductName
+impacket-reg 'lab.example/labadmin@srv01.lab.example' query -keyName 'HKLM\SOFTWARE\LabApp' -s</code></pre>
+
+<p>This uses the Remote Registry RPC interface over SMB to operate on the remote registry. <code>-keyName</code> selects a key, <code>-v</code> selects a value, and <code>-s</code> recursively queries below the selected key. Access is checked against the registry and remote-management permissions. The helper may start or temporarily enable RemoteRegistry when its workflow requires it, so even a query-oriented invocation can affect that service state.</p>
+
+<p><code>add</code> and <code>delete</code> modify keys or values; <code>-vt</code> and <code>-vd</code> specify type and data for a supported write. <code>save</code> asks the remote machine to export a selected hive/key, while <code>backup</code> targets the SAM, SYSTEM, and SECURITY hives. Their <code>-o</code> value is an output UNC path used by the target, not simply a local Kali filename. That requires the target to reach and write to the destination.</p>
+
+<p>A successful registry read is not permission to change the same key, and saving credential hives requires additional privileges. Read the scope of each action before treating this as the equivalent of opening a local text file.</p>
+
+<h2 id="tool-registry-read">registry-read — inspect an acquired registry hive offline</h2>
+
+<pre><code>impacket-registry-read ./SOFTWARE.copy enum_key -name '\Microsoft'
+impacket-registry-read ./SOFTWARE.copy enum_values -name '\Microsoft\Windows NT\CurrentVersion'
+impacket-registry-read ./SOFTWARE.copy get_value -name '\Microsoft\Windows NT\CurrentVersion\ProductName'</code></pre>
+
+<p>These examples parse a local binary registry-hive copy. <code>enum_key</code> lists subkeys, <code>enum_values</code> lists values at one key, and <code>get_value</code> reads one named value. Paths are relative to the root of the acquired hive, so <code>SOFTWARE.copy</code> does not need an extra <code>HKLM\SOFTWARE</code> prefix inside every path.</p>
+
+<p><code>-recursive</code> expands supported enumeration, <code>walk</code> traverses a subtree, and <code>get_class</code> reads a key's class metadata. This tool does not authenticate to Windows or acquire the hive. The ability to read an offline copy comes from the earlier acquisition step; encrypted secrets inside it can still require the appropriate keys and another parser.</p>
+
+<h2 id="tool-attrib">attrib — query or change SMB file attributes</h2>
+
+<pre><code>python3 /usr/share/doc/python3-impacket/examples/attrib.py 'lab.example/alice@srv01.lab.example' Public 'Reports\assessment.txt' query</code></pre>
+
+<p>This sends SMB file-information operations for one path on one share. The target identity, share name, and path are separate positional arguments; <code>query</code> reads attribute flags such as archive, hidden, or read-only. Those flags describe file behavior and presentation, not its entire security descriptor.</p>
+
+<p>The <code>set</code> action writes supported attribute flags; options such as <code>--readonly</code>, <code>--hidden</code>, and <code>--normal</code> select the intended values. That action needs file-attribute write permission and may replace the set of flags rather than merely displaying it. Marking a file read-only is not a replacement for a restrictive DACL, and setting an encrypted/compressed-looking attribute is not proof that a complete data transformation happened. Server support and resulting file information must be checked.</p>
+
+<h2 id="tool-filetime">filetime — inspect or modify SMB file timestamps</h2>
+
+<pre><code>python3 /usr/share/doc/python3-impacket/examples/filetime.py 'lab.example/alice@srv01.lab.example' Public 'Reports\assessment.txt' stat</code></pre>
+
+<p>The <code>stat</code> action asks SMB for the selected file's timestamp fields, including creation, access, write, and change time. Those fields describe different events; change time is not simply another name for the last content-write time. A filesystem, application, or backup process can also affect how timestamps are maintained.</p>
+
+<p>The <code>touch</code> action changes selected fields when the account has attribute-write permission. <code>--timestamp</code> supplies a value, <code>--reference</code> selects another share/path whose times are copied, and <code>--validate</code> reads the result back. This is an integrity-impacting write, not passive inspection. For an assessment, first understanding who can alter metadata helps explain why a timestamp alone is weak evidence of when a file was created or used.</p>
+
+<h2 id="relay-applications">Relay and application protocols</h2>
+
+<h2 id="tool-ntlmrelayx">ntlmrelayx — forward an NTLM authentication exchange to another service</h2>
+
+<p>NTLM is a challenge-response protocol. The client calculates a response using its secret and the server's challenge. In a relay, the intermediary forwards the target server's challenge to the client, then forwards the client's answer back to that target. The intermediary can authenticate a connection as the client without learning its password, if the protocol protections and endpoint policies permit the exchange.</p>
+
+<pre><code>sudo impacket-ntlmrelayx -t smb://srv01.lab.example -smb2support -i --no-http-server --no-wcf-server --no-raw-server --no-rpc-server --no-winrm-server</code></pre>
+
+<p>Here <code>-t</code> selects one SMB destination, <code>-smb2support</code> enables SMB2 on the receiving server, and <code>-i</code> requests an interactive session after a successful supported relay. The server-disabling flags leave the SMB listener as the selected receiving path. This command waits for incoming authentication; it does not itself make a client connect or discover a password. An independently configured lab client must authenticate to the listener.</p>
+
+<h3>Why can a relay authenticate successfully but still fail to execute?</h3>
+
+<p>The relayed identity keeps its permissions at the destination. An ordinary account may read an allowed share but lack access to the service manager or protected registry data. “Relay succeeded” therefore does not mean “administrator shell.” Requiring SMB signing at the destination can prevent ordinary SMB relay use because the intermediary lacks the signing key needed for subsequent messages. LDAP signing, LDAPS channel binding, HTTP extended protection, and NTLM restrictions protect different paths. Enabling TLS alone is not the same as correctly binding NTLM authentication to that TLS channel.</p>
+
+<pre><code>sudo impacket-ntlmrelayx -t ldap://dc01.lab.example -i --no-http-server --no-wcf-server --no-raw-server --no-rpc-server --no-winrm-server
+sudo impacket-ntlmrelayx -tf lab-relay-targets.txt -smb2support -socks --no-http-server --no-wcf-server --no-raw-server --no-rpc-server --no-winrm-server</code></pre>
+
+<p>The LDAP example changes the destination protocol and asks for its interactive console, where the relayed identity's directory permissions apply. The targets-file example reads protocol-qualified destinations from a file and asks supported relay clients to preserve authenticated sessions for SOCKS use. SOCKS mode reuses specific established identities and connections; it is not a general-purpose proxy that grants arbitrary authentication to any host. <code>-socks-address</code> and <code>-socks-port</code> control that local interface.</p>
+
+<p>Post-authentication behavior is important. A bare SMB relay can attempt secret dumping by default in this implementation; <code>-c</code> requests command execution and <code>-e</code> supplies an executable. LDAP modes can enumerate or attempt directory changes. <code>--no-dump</code>, <code>--no-da</code>, and <code>--no-acl</code> control particular LDAP actions; they are not universal read-only switches for every protocol. Read the selected module's behavior before assuming that starting a listener merely captures traffic.</p>
+
+<p>The larger option set selects additional protocol-specific actions: <code>-q</code> sends SQL queries; <code>--dump-laps</code> and <code>--dump-gmsa</code> request readable managed-password data; <code>--delegate-access</code> writes delegation configuration when permitted; and <code>--shadow-credentials</code> changes key-credential data on an authorized target object. Each depends on the relayed account's actual authority, not just on possession of an NTLM response.</p>
+
+<p><code>--adcs</code> selects certificate-enrollment relay behavior, with <code>--template</code> choosing an enrollment template. The endpoint's authentication protections, enrollment permissions, and template configuration determine whether a useful certificate can be issued. <code>--rpc-attack</code> and <code>-rpc-mode</code> select supported task/certificate RPC paths. SCCM-specific options target management-point policies or distribution-point content. These are separate workflows, not flags to append together until something succeeds.</p>
+
+<p>Historical switches such as <code>--remove-mic</code> rely on particular vulnerable protocol behavior. They do not generally defeat current signing or channel-binding enforcement. For a useful finding, record the source identity, destination protocol, protection that was missing, and concrete operation allowed after authentication. Capturing a challenge-response string alone is not that finding.</p>
+
+<h2 id="tool-mssqlinstance">mssqlinstance — ask SQL Browser which instances are advertised</h2>
+
+<pre><code>impacket-mssqlinstance sql01.lab.example
+impacket-mssqlinstance sql01.lab.example -timeout 3</code></pre>
+
+<p>SQL Server Browser can answer SQL Server Resolution Protocol queries over UDP 1434 with instance names and connection information. This helps when a named SQL instance listens on a dynamic TCP port instead of 1433. The second example changes how long the tool waits for a response.</p>
+
+<p>This is discovery, not a database login. A silent response can mean SQL Browser is disabled or UDP is filtered even while the database service is reachable. Use the returned endpoint information with a database client; do not confuse the Browser UDP port with the TDS port used for actual SQL queries.</p>
+
+<h2 id="tool-mssqlclient">mssqlclient — authenticate through TDS and understand the SQL execution context</h2>
+
+<pre><code>impacket-mssqlclient 'lab.example/alice@sql01.lab.example' -windows-auth
+impacket-mssqlclient 'sqlaudit@sql01.lab.example' -port 1433 -db master</code></pre>
+
+<p>SQL Server speaks Tabular Data Stream, or TDS. The first command requests Windows authentication, where the server validates a Windows identity. The second uses a SQL login and selects a database. These identities are not interchangeable: a Windows password may be valid for the domain yet have no SQL login permission, while a SQL-only account may have no Windows logon rights.</p>
+
+<pre><code>SELECT SYSTEM_USER AS login_name, USER_NAME() AS database_user;
+SELECT IS_SRVROLEMEMBER('sysadmin') AS is_sysadmin;
+enum_db
+enum_links
+enum_impersonate</code></pre>
+
+<p>These lines belong inside the SQL client. SQL Server distinguishes the server login from the user mapped inside a database. The queries show those contexts and whether the current context is a sysadmin. The client helpers enumerate databases, linked servers, and potential impersonation relationships using SQL queries. <code>-show</code> helps reveal the queries sent by helpers, and <code>-file</code> reads SQL-shell commands from a file.</p>
+
+<h3>How does a SQL connection become an operating-system command?</h3>
+
+<p><code>xp_cmdshell</code> is a SQL Server extended procedure that can launch an OS command when enabled and permitted. Impacket's helper calls that procedure; TDS itself does not launch a Windows shell. A sysadmin invocation normally uses the SQL Server service account, while an authorized non-sysadmin invocation needs the configured proxy account. That account might be a low-privilege service identity, a domain account, or something more powerful; inspect the result rather than assuming SYSTEM.</p>
+
+<pre><code>xp_cmdshell whoami</code></pre>
+
+<p>This single helper command asks an already permitted and enabled xp_cmdshell to report its Windows identity. <code>enable_xp_cmdshell</code> changes server configuration and needs sufficient SQL privileges; it is not a harmless prerequisite to run automatically. <code>exec_as_login</code> and <code>exec_as_user</code> change supported SQL security contexts only when impersonation is allowed. <code>use_link</code> traverses a linked-server relationship whose login mapping and RPC configuration determine the next authority.</p>
+
+<p>Helpers that upload/download files or start SQL Agent jobs depend on further database and OS capabilities. A shell helper prefixed with <code>!</code> runs locally on Kali; it is not proof of remote execution. Separate SQL data access, SQL privilege escalation, and OS command execution in both reasoning and reporting.</p>
+
+<h2 id="tool-exchanger">exchanger — query Exchange address-book information through NSPI</h2>
+
+<pre><code>impacket-exchanger 'lab.example/alice@exchange.lab.example' nspi list-tables -count
+impacket-exchanger 'lab.example/alice@exchange.lab.example' nspi dump-tables -name GAL -lookup-type MINIMAL -rows-per-request 50</code></pre>
+
+<p>The Name Service Provider Interface exposes address-book information used by Exchange clients. This tool reaches the supported NSPI/RPC-over-HTTP path. <code>list-tables</code> enumerates address books and <code>-count</code> asks for their sizes. <code>dump-tables</code> requests records from the selected address book; GAL refers to the global address list, where supported by the server's naming.</p>
+
+<p><code>-lookup-type</code> selects how much record data to request, and <code>-rows-per-request</code> sets batching rather than a total result limit. <code>-rpc-hostname</code> supplies the backend RPC identity when the public Exchange hostname alone is insufficient. DNS, RPC proxy configuration, and account permissions all matter.</p>
+
+<p>The <code>guid-known</code> action requests objects by supplied GUID, while <code>dnt-lookup</code> iterates distinguished-name tags across a selected range. These modes can reveal directory information exposed through Exchange. They are not mailbox-message download commands, nor do they prove that LDAP is equally accessible from the same network position.</p>
+
+<h2 id="tool-rdp_check">rdp_check — test the supported RDP authentication negotiation</h2>
+
+<pre><code>impacket-rdp_check 'lab.example/alice@srv01.lab.example'
+impacket-rdp_check 'lab.example/alice@srv01.lab.example' -hashes ':&lt;ALICE_NT_HASH&gt;'</code></pre>
+
+<p>This example speaks enough RDP/CredSSP-related negotiation to test credentials against the target, normally on TCP 3389. It does not render a desktop. The second form supplies NT-hash material to its supported authentication path; acceptance also depends on server capabilities and policy, rather than hashes being universally usable for every RDP logon.</p>
+
+<p>An authentication-stage result should not be stretched into proof of a usable interactive desktop. Remote-interactive logon rights, account restrictions, session policy, and later protocol stages can still matter. <code>-6</code> selects IPv6 support. A protocol negotiation failure can be different from an invalid password, especially with modern CredSSP/TLS requirements or older client implementations.</p>
+
+<h2 id="tool-mqtt_check">mqtt_check — test a broker's MQTT CONNECT authentication</h2>
+
+<pre><code>impacket-mqtt_check 'labreader@mqtt.lab.example' -port 1883 -client-id lab-audit-01
+impacket-mqtt_check 'labreader@mqtt.lab.example' -ssl -port 8883 -client-id lab-audit-02</code></pre>
+
+<p>MQTT is a publish/subscribe protocol often used by applications and devices. This script opens a connection to a broker, sends the MQTT CONNECT information, and evaluates the response. The first command uses a normal plaintext port; the second explicitly enables TLS and selects the common TLS port. <code>-ssl</code> and the destination port should be chosen together for the actual broker configuration.</p>
+
+<p>The client ID identifies the MQTT client session; it is not the username. Reusing an existing client ID can interfere with that client's session, depending on broker behavior, so the examples use dedicated identifiers. A successful CONNECT proves the broker accepted that connection, not that the account may read or publish every topic. Topic authorization is a separate application decision.</p>
+
+<h2 id="offline">Offline files: the acquisition happened before this command</h2>
+
+<h2 id="tool-esentutl">esentutl — inspect an Extensible Storage Engine database</h2>
+
+<pre><code>impacket-esentutl ./lab-database.edb info
+impacket-esentutl ./lab-database.edb export -table '&lt;TABLE_FROM_CATALOG&gt;'
+impacket-esentutl ./lab-database.edb dump -page 10</code></pre>
+
+<p>ESE is a database format used by several Windows components. Impacket's example reads a local database structure: <code>info</code> inspects the catalog, <code>export</code> selects a named table, and <code>dump</code> inspects a page. The table name in the second command must come from the actual catalog; it is not a universal table shared by every ESE database.</p>
+
+<p>This Python utility is not Microsoft's full repair/recovery program with the same familiar name. A database needing transaction-log recovery or using unsupported format details can fail to parse. It does not acquire a locked live database from a remote server. Reading NTDS table structures also does not by itself decrypt directory password material; the database encryption context still matters.</p>
+
+<h2 id="tool-ntfs-read">ntfs-read — read a local NTFS volume or volume image</h2>
+
+<pre><code>impacket-ntfs-read ./lab-ntfs-volume.img
+impacket-ntfs-read ./lab-ntfs-volume.img -extract '\Windows\System32\config\SAM'</code></pre>
+
+<p>This example interprets NTFS structures, including file records and data runs, from a local volume. The first form opens its explorer; the second extracts the selected path from that volume. A raw NTFS volume image is different from a complete partitioned-disk image: the parser must be pointed at the NTFS volume itself, not blindly at an unrelated disk-image header.</p>
+
+<p>Raw-device access may require local privileges, but an already readable image file does not gain anything from sudo. This bypasses the live Windows file-access API because the data is being read as an acquired filesystem image; obtaining that image is a separate privileged step. BitLocker or EFS-protected content is not decrypted merely by parsing NTFS. The tool is read-only toward the source, while extracted files are local output artifacts.</p>
+
+<h2 id="tool-samedit">samedit — change a password in an offline SAM hive copy</h2>
+
+<pre><code>python3 /usr/share/doc/python3-impacket/examples/samedit.py labuser ./SAM.working-copy -system ./SYSTEM.copy -password '&lt;NEW_LAB_USER_PASSWORD&gt;'</code></pre>
+
+<p>SAMEdit opens a local SAM hive and replaces a selected local account's stored password material. <code>labuser</code> names the account inside the hive, <code>SAM.working-copy</code> is the file being modified, and the matching SYSTEM hive provides the boot-key context. <code>-bootkey</code> can supply that key directly, while <code>-hashes</code> supplies replacement hash material instead of a plaintext password.</p>
+
+<p>This is an in-place edit, which is why the example explicitly uses a working copy. It does not contact a running Windows host, reset a domain account, or bypass BitLocker. The wider security issue is whether an actor can obtain and replace the relevant offline system files. A successful edit of a copied hive is not proof that the live machine's account was changed, and restoring altered system files is a separate, potentially disruptive operation.</p>
+
+<h2 id="specialized">Specialized techniques and older vulnerability examples</h2>
+
+<h2 id="tool-wmipersist">wmipersist — register a WMI event subscription that can execute a script</h2>
+
+<p>WMI can react to events without a user manually starting a program each time. A permanent event subscription has a filter describing when to trigger, a consumer describing what action to perform, and a binding connecting them. This tool creates or removes those objects through DCOM/WMI. It is different from WMIExec's one-shot process creation.</p>
+
+<pre><code>impacket-wmipersist 'lab.example/labadmin@srv01.lab.example' install -name LabMarker -vbs ./lab-marker.vbs -timer 60000
+impacket-wmipersist 'lab.example/labadmin@srv01.lab.example' remove -name LabMarker</code></pre>
+
+<p>The first example assumes a prepared harmless VBScript file for the lab, such as one that writes a timestamp into a dedicated test file. <code>-vbs</code> reads that local script and stores its contents in an ActiveScript event consumer; <code>-name</code> names the subscription objects. <code>-timer 60000</code> creates a timer-based trigger with a 60,000-millisecond interval. This can execute repeatedly, not merely once after the command returns.</p>
+
+<p>Alternatively, <code>-filter</code> supplies a WQL event condition. This implementation requires a filter or a timer, not both. The account needs appropriate rights over the subscription namespace, typically administrative rights. Execution is performed later by the consumer infrastructure in its configured security context; it is not a shell kept alive by the Kali terminal.</p>
+
+<p>The second command removes the objects associated with the same name. Use a dedicated name that does not collide with an existing subscription, and verify the filter, consumer, binding, and timer state afterward. A successfully created consumer without its binding or trigger is not proof that the intended action actually ran.</p>
+
+<h2 id="tool-goldenpac">goldenPac — demonstrate the historical MS14-068 Kerberos PAC flaw</h2>
+
+<pre><code>impacket-goldenPac 'lab.example/alice@dc01.lab.example' -dc-ip 192.0.2.10 -w ./ms14-068-lab.ccache None</code></pre>
+
+<p>GoldenPAC targets the historical MS14-068 PAC-validation vulnerability. On a specifically vulnerable DC, forged authorization data could be accepted during the Kerberos exchange, allowing an authenticated low-privilege account to obtain elevated authority. This is a vulnerability-dependent path, not the same prerequisite as Ticketer already possessing the krbtgt key. Microsoft documented the flaw and its update in <a href="https://learn.microsoft.com/en-us/security-updates/securitybulletins/2014/ms14-068" target="_blank" rel="noopener">MS14-068</a>.</p>
+
+<p>The identity supplies a valid lab account, <code>-dc-ip</code> selects the DC, and <code>-w</code> writes the resulting cache when the vulnerable exchange succeeds. The literal positional <code>None</code> tells this script not to run its PsExec stage. Without that selection, the tool can continue into remote execution; it is not merely a ticket-inspection utility.</p>
+
+<p>A patched DC should not be treated as vulnerable merely because Kerberos is reachable or normal users can request tickets. The correct learning point is which authorization data the vulnerable KDC trusted, and why server-side verification changed that outcome. A failed run on a modern domain is not evidence that ordinary Kerberos authentication is broken.</p>
+
+<h2 id="tool-raisechild">raiseChild — show the impact of a compromised child domain within a forest</h2>
+
+<pre><code>impacket-raiseChild 'child.lab.example/childadmin' -w ./forest-lab.ccache</code></pre>
+
+<p>This is a compound automation tool. It assumes substantial control in a child domain, including the ability to obtain required child-domain secrets. It discovers parent/forest information, obtains key material, constructs a ticket carrying additional authorization claims, and attempts access to forest-root credential material through the intra-forest trust relationship. It does not turn an ordinary child-domain user into a forest administrator from nothing.</p>
+
+<p><code>-w</code> saves the generated cache; it does not restrict the run to saving a file. The normal workflow can still perform privileged credential-replication operations. <code>-targetRID</code> selects the target account RID used by its credential-retrieval stage, and <code>-target-exec</code> adds a PsExec stage against a selected host. Those flags change the effects of the overall chain.</p>
+
+<p>The underlying lesson is that a child domain inside a forest should not be assumed to isolate the forest from a compromised domain administrator. Actual success depends on the trust relationship, SID filtering and other controls, keys, target validation, and available protocols. Do not generalize this intra-forest example to every external trust or treat a locally generated ticket as proof of parent-domain compromise.</p>
+
+<h2 id="tool-sambapipe">sambaPipe — load a shared library through a vulnerable Samba server</h2>
+
+<pre><code>impacket-sambaPipe 'labuser@samba.lab.example' -so ./lab-proof.so</code></pre>
+
+<p>This example targets CVE-2017-7494. It uploads a prepared shared library to a suitable writable Samba share, determines the server-side share path, and uses the vulnerable named-pipe/module-loading behavior to have the server load that library. The library must match the server platform and implement the intended benign lab proof; this command does not build it.</p>
+
+<p><code>-so</code> selects the local shared-library file. SMB credentials are useful when the writable share requires authentication, but the decisive prerequisites also include a vulnerable Samba build and the relevant server configuration. Write access to a share alone does not imply that a patched server will load arbitrary libraries. Loading the library is the execution event; whether it exposes a shell depends on the library's own behavior.</p>
+
+<p>Read the affected and fixed versions in the <a href="https://www.samba.org/samba/security/CVE-2017-7494.html" target="_blank" rel="noopener">Samba advisory</a>. This is an old vulnerability-specific technique. It is not the Windows service-manager mechanism used by PsExec, despite both starting from SMB file access.</p>
+
+<h2 id="tool-kintercept">kintercept — proxy Kerberos TCP traffic for protocol experiments</h2>
+
+<pre><code>python3 /usr/share/doc/python3-impacket/examples/kintercept.py 192.0.2.10 --server-port 88 --listen-addr 127.0.0.1 --listen-port 1088</code></pre>
+
+<p>KIntercept listens locally and forwards TCP traffic to the selected upstream server. In this example the listener is on loopback port 1088 and the upstream is the lab KDC on port 88. A separately configured lab client or forwarding arrangement must direct its traffic into that listener; starting the program does not intercept the network automatically.</p>
+
+<p>The script contains request/reply handlers for historical Kerberos experiments. <code>--request-handler</code> can select its <code>s4u2else:USER</code> handler, while <code>--reply-handler</code> selects a supported reply transformation. The relevant examples explore S4U name/checksum handling associated with CVE-2018-16860 and CVE-2019-0734. Changing bytes in a request is not enough to make a patched KDC accept invalid authorization data.</p>
+
+<p>This is an older development example with legacy Python/dependency assumptions. The plain proxy combination above explains transport placement without selecting an identity-changing handler. It is a TCP proxy, not a transparent capture tool for all Kerberos UDP traffic, and it does not provide missing session keys or domain privileges.</p>
+
+<h2 id="packets">Packet examples: understand what is visible on the wire</h2>
+
+<h2 id="tool-ping">ping — construct an IPv4 ICMP echo packet</h2>
+
+<pre><code>sudo impacket-ping 192.0.2.50 192.0.2.20</code></pre>
+
+<p>This old example takes two positional arguments: source IPv4 address and destination IPv4 address. The source should be an address actually assigned to the lab interface you are using. The script builds the IP/ICMP packet with Impacket, sends it through a raw socket, and decodes matching echo replies. Raw-socket privileges explain sudo here; it does not grant rights on the remote host.</p>
+
+<p>It repeats until interrupted and does not accept the full option set of the system ping utility. An echo reply demonstrates an ICMP path and a responding host. Silence can mean filtering, routing trouble, or a host that does not answer ICMP, so it is not sufficient proof that SMB, LDAP, or Kerberos is unavailable.</p>
+
+<h2 id="tool-ping6">ping6 — construct an IPv6 ICMP echo request</h2>
+
+<pre><code>sudo impacket-ping6 2001:db8:1::50 2001:db8:1::20</code></pre>
+
+<p>The two arguments are source and destination IPv6 addresses in the imaginary lab. This script builds ICMPv6 echo requests and decodes replies through a raw IPv6 socket. Use a source address assigned to the interface and a routable destination for the lab; these documentation addresses are placeholders.</p>
+
+<p>Like its IPv4 counterpart, it runs a loop until interrupted and is primarily a packet-construction example. IPv4 and IPv6 paths can have different firewall rules and routes, so success on one does not establish success on the other. Link-local addresses also require correct interface scoping; do not assume every feature of the operating system's ping6 client exists here.</p>
+
+<h2 id="tool-sniff">sniff — capture visible packets with libpcap and a BPF filter</h2>
+
+<pre><code>sudo impacket-sniff 'tcp port 445 and host 192.0.2.20'</code></pre>
+
+<p>This example uses pcapy/libpcap. It lists/selects an available interface and treats the supplied arguments as a BPF capture filter. The filter here limits processing to TCP port 445 traffic involving the selected lab host. Impacket then decodes packets into human-readable protocol structures.</p>
+
+<p>This is passive capture on the chosen interface, not a request to log in to SMB. It can only inspect traffic visible at that capture point; a switched network does not normally deliver every other host's traffic to Kali. Encrypted payloads remain encrypted without the corresponding secrets and protocol support. The example prints decoded packets; it is not a full replacement for a capture program's file-output and analysis options.</p>
+
+<h2 id="tool-sniffer">sniffer — decode packets delivered to raw protocol sockets</h2>
+
+<pre><code>sudo impacket-sniffer icmp tcp udp</code></pre>
+
+<p>Sniffer is a separate raw-socket example. Its positional values are IP protocol names, not a BPF expression. It opens a socket for each selected protocol and uses Impacket's IP decoder on packets received through those sockets. With no arguments, its default protocol list is ICMP, TCP, and UDP.</p>
+
+<p>The operating system and privileges determine which packets those sockets receive. There is no directory of remote hosts being queried and no authentication step. Use it to understand packet parsing in a lab; it does not reveal encrypted application data or become a network-wide tap simply because the process runs as root.</p>
+
+<h2 id="tool-split">split — separate an acquired packet capture into endpoint-based files</h2>
+
+<pre><code>impacket-split ./lab-session.pcap</code></pre>
+
+<p>Split reads a local pcap file, filters for the supported IPv4 TCP traffic, and writes smaller pcap files named from address/port endpoints. There is no network connection. The input must use a supported link-layer format; it is not a universal pcapng, IPv6, UDP, or application-stream processor.</p>
+
+<p>Run it in a dedicated working directory because the output files are created there. In the reviewed implementation, endpoint ordering can result in separate directional files, so inspect which directions were retained instead of assuming one perfectly merged bidirectional session. Separating packets does not reconstruct a file transfer, decrypt TLS, or recover a password. It simply makes a capture easier to examine in smaller pieces.</p>
+
+<h2 id="choose-and-interpret">Choosing a tool and interpreting its result</h2>
+
+<p>Now we can see why “I have credentials, which tool gives a shell?” is incomplete. First identify the account, protocol, and permission. A user allowed to read LDAP can enumerate directory objects. A user allowed to read an SMB share can retrieve files. Creating a service, starting a WMI process, requesting replication secrets, and modifying an AD DACL require different authority. Choose the tool that exercises the specific permission you are trying to understand.</p>
+
+<ul>
+<li><b>A password or hash works, but access is denied:</b> authentication succeeded somewhere, but the requested operation may require another right. Check account context, token filtering, object ACLs, and service policy.</li>
+<li><b>PsExec fails before starting a service:</b> separate the share-upload stage from the SCM stage. Writable storage and service-creation rights are independent.</li>
+<li><b>WMIExec creates a process but prints nothing:</b> the RPC execution path and SMB output path have different connectivity and access requirements. Avoid repeating a state-changing command until you know which stage failed.</li>
+<li><b>Kerberos reports a principal or encryption error:</b> check the realm, target hostname/SPN, selected KDC, usable cache, time, and key type. An IP change does not rewrite every service identity.</li>
+<li><b>A roasting tool writes a hash-like string:</b> it obtained offline-verification material. It has not necessarily recovered a password or a reusable NT hash.</li>
+<li><b>A relay listener receives authentication:</b> verify whether it authenticated to the intended destination and what operation that identity could perform. A received handshake alone does not demonstrate impact.</li>
+<li><b>An offline parser succeeds:</b> the conclusion concerns the acquired file. It does not prove access to the live host or a change to that host.</li>
+<li><b>An old exploit example exists in Kali:</b> availability of its source does not mean the target still has the historical vulnerability.</li>
+</ul>
+
+<p>For us as pentesters, the useful result is a clear chain of evidence: this identity reached this interface, the server permitted this operation, and this was the resulting access or change. That explanation is more valuable than a screenshot of a tool banner. Once we understand the protocol and the permission behind a command, both successful results and failures start making sense.</p>
+
+<h2 id="references">Resources used to make this blog:</h2>
+<p>I did a lot of research on the internet to make this blog and for obvious reason I can not include every single link and website I read. However these are the most popular and important resources:</p>
+<ul>
+<li><a href="https://www.kali.org/tools/impacket-scripts/" target="_blank" rel="noopener">Kali Impacket scripts: packaging and command help</a></li>
+<li><a href="https://github.com/fortra/impacket/tree/master/examples" target="_blank" rel="noopener">Fortra Impacket: example programs</a></li>
+<li><a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/best-practices-for-securing-active-directory" target="_blank" rel="noopener">Best practices</a></li>
+<li><a href="https://github.com/fortra/impacket/blob/master/impacket/examples/serviceinstall.py" target="_blank" rel="noopener">Service installation helper used by PsExec</a></li>
+<li><a href="https://learn.microsoft.com/en-us/windows/win32/secauthn/microsoft-kerberos" target="_blank" rel="noopener">Kerberos</a></li>
+<li><a href="https://learn.microsoft.com/en-us/windows/win32/secauthn/authentication-reference" target="_blank" rel="noopener">authentication-reference</a></li>
+<li><a href="https://learn.microsoft.com/en-us/windows-server/security/kerberos/kerberos-authentication-overview" target="_blank" rel="noopener">Microsoft: Kerberos authentication overview</a></li>
+<li><a href="https://learn.microsoft.com/en-us/security-updates/securitybulletins/2014/ms14-068" target="_blank" rel="noopener">Microsoft: MS14-068</a></li>
+<li><a href="https://www.samba.org/samba/security/CVE-2017-7494.html" target="_blank" rel="noopener">Samba: CVE-2017-7494</a></li>
+<li><a href="https://www.hackingarticles.in/" target="_blank" rel="noopener">Hackingarticles</a></li>
+<li><a href="https://www.thehacker.recipes/" target="_blank" rel="noopener">The hacker recipes</a></li>
+<li><a href="https://blog.deephacking.tech/en/" target="_blank" rel="noopener">Deep Hacking</a></li>
+<li><a href="https://hacktrack.io/" target="_blank" rel="noopener">Hacktrack</a></li>
+</ul>
+
+      </div>
+    </article>
+  </div>
+
+  <div class="footer">offsec1337 &copy; 2026 &mdash; stay legal, hack responsibly.</div>
+
+  <script src="../js/search.js"></script>
+</body>
+</html>

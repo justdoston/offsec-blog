@@ -16,5 +16,11 @@
     "excerpt": "Docker & Rbash escape, jailbreaking, docker abuse",
     "slug": "jailbreaking",
     "date": "2026-08-22"
+  },
+  {
+    "title": "Impacket usage",
+    "excerpt": "Theory behind impacket tools",
+    "slug": "Impacket usage",
+    "date": "2026-09-21"
   }
 ]

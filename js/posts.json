@@ -22,5 +22,11 @@
     "excerpt": "Theory behind impacket tools",
     "slug": "impacket-tools-usage-and-theory",
     "date": "2026-09-21"
+  },
+  {
+    "title": "CVE-2026-111796-PoC",
+    "excerpt": "PoC for my 0-day",
+    "slug": "CVE-2026-111796-PoC",
+    "date": "2026-10-17"
   }
 ]
